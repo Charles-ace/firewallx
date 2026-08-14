@@ -140,7 +140,7 @@ export const IncidentCaseStudy: React.FC = () => {
           <div className="space-y-2 text-xs text-slate-500">
             <div className="flex items-start space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
-              <span>Sliding-window loop detector (in-browser engine) flags the 4th identical calldata and trips the sandbox breaker.</span>
+              <span>Sliding-window loop detector flags the 4th identical calldata — the same identical-payload limit the Guard enforces on-chain — and trips the sandbox breaker.</span>
             </div>
             <div className="flex items-start space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />

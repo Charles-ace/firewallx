@@ -115,7 +115,7 @@ describe("FirewallX System Tests", function () {
       expect(agentInfo.status).to.equal(2); // TRIPPED
       expect(agentInfo.lastTripReason).to.equal("Identical payload repetition limit exceeded (Loop Detected)");
 
-      const [permitted, reason] = await registry.isActionPermitted(agentWallet.address, await targetContract.getAddress(), 0);
+      const [permitted, reason] = await registry.isActionPermittedView(agentWallet.address, await targetContract.getAddress(), 0, ethers.ZeroHash);
       expect(permitted).to.equal(false);
       expect(reason).to.equal("Circuit Breaker TRIPPED");
     });
@@ -137,7 +137,7 @@ describe("FirewallX System Tests", function () {
       const agentInfo = await registry.agents(agentWallet.address);
       expect(agentInfo.status).to.equal(0); // ACTIVE
 
-      const [permitted] = await registry.isActionPermitted(agentWallet.address, await targetContract.getAddress(), 0);
+      const [permitted] = await registry.isActionPermittedView(agentWallet.address, await targetContract.getAddress(), 0, ethers.ZeroHash);
       expect(permitted).to.equal(true);
     });
   });
@@ -197,6 +197,123 @@ describe("FirewallX System Tests", function () {
       await expect(
         guard.connect(agentWallet).executeGuarded(targetAddr, 0, data)
       ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+    });
+  });
+
+  describe("On-chain Velocity & Loop Enforcement (rolling window)", function () {
+    const loopPolicy = {
+      maxSpendPerTx: ethers.parseEther("1.0"),
+      maxHourlySpend: ethers.parseEther("5.0"),
+      maxTxPerMinute: 10, // high so the loop check is the one that fires
+      loopWindowSeconds: 60,
+      maxIdenticalPayloads: 2,
+      anomalyThreshold: 750,
+      enforceAllowlist: false,
+    };
+
+    const velocityPolicy = {
+      maxSpendPerTx: ethers.parseEther("1.0"),
+      maxHourlySpend: ethers.parseEther("5.0"),
+      maxTxPerMinute: 2,
+      loopWindowSeconds: 60,
+      maxIdenticalPayloads: 0, // disabled so the velocity check is the one that fires
+      anomalyThreshold: 750,
+      enforceAllowlist: false,
+    };
+
+    const makeData = (key: string, val: string) =>
+      targetContract.interface.encodeFunctionData("setKeyValue", [key, val]);
+
+    async function registerAgentWithPolicy(pol: typeof loopPolicy) {
+      await registry.connect(agentOwner).registerAgent(agentWallet.address, "Agent-Velocity", "aidid:v-001", pol);
+      return await targetContract.getAddress();
+    }
+
+    it("should enforce maxIdenticalPayloads on-chain via the Guard", async function () {
+      const targetAddr = await registerAgentWithPolicy(loopPolicy);
+      const data = makeData("loopKey", "loopVal");
+
+      // 2 identical calls allowed (maxIdenticalPayloads = 2)
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, data);
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, data);
+
+      // 3rd identical call within the window must be blocked
+      await expect(
+        guard.connect(agentWallet).executeGuarded(targetAddr, 0, data)
+      ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+
+      // View preflight confirms the loop denial reason
+      const fp = ethers.keccak256(ethers.solidityPacked(["address", "uint256", "bytes"], [targetAddr, 0, data]));
+      const [ok, reason] = await registry.isActionPermittedView(agentWallet.address, targetAddr, 0, fp);
+      expect(ok).to.equal(false);
+      expect(reason).to.equal("Repetitive loop detected");
+    });
+
+    it("should allow the same payload again once the loop window expires", async function () {
+      const targetAddr = await registerAgentWithPolicy(loopPolicy);
+      const data = makeData("loopKey", "loopVal");
+
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, data);
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, data);
+      await expect(
+        guard.connect(agentWallet).executeGuarded(targetAddr, 0, data)
+      ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+
+      // Advance past loopWindowSeconds (60s)
+      await hre.network.provider.send("evm_increaseTime", [61]);
+      await hre.network.provider.send("evm_mine", []);
+
+      // Window expired — same payload is permitted again
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, data);
+    });
+
+    it("should enforce maxTxPerMinute on-chain via the Guard", async function () {
+      const targetAddr = await registerAgentWithPolicy(velocityPolicy);
+
+      // 2 distinct calls allowed (maxTxPerMinute = 2)
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k1", "v1"));
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k2", "v2"));
+
+      // 3rd call within the same minute must be blocked
+      await expect(
+        guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k3", "v3"))
+      ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+
+      const [ok, reason] = await registry.isActionPermittedView(agentWallet.address, targetAddr, 0, ethers.ZeroHash);
+      expect(ok).to.equal(false);
+      expect(reason).to.equal("Rate limit exceeded");
+    });
+
+    it("should reset the velocity window after 60 seconds", async function () {
+      const targetAddr = await registerAgentWithPolicy(velocityPolicy);
+
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k1", "v1"));
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k2", "v2"));
+      await expect(
+        guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k3", "v3"))
+      ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+
+      await hre.network.provider.send("evm_increaseTime", [61]);
+      await hre.network.provider.send("evm_mine", []);
+
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k4", "v4"));
+    });
+
+    it("should not record velocity/repetition state for blocked calls", async function () {
+      const targetAddr = await registerAgentWithPolicy(velocityPolicy);
+
+      // Two calls then a blocked 3rd — the blocked attempt must not consume a velocity slot
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k1", "v1"));
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k2", "v2"));
+      await expect(
+        guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k3", "v3"))
+      ).to.be.revertedWithCustomError(guard, "ExecutionBlocked");
+
+      // After the window, only 2 slots were recorded — 2 new calls succeed
+      await hre.network.provider.send("evm_increaseTime", [61]);
+      await hre.network.provider.send("evm_mine", []);
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k4", "v4"));
+      await guard.connect(agentWallet).executeGuarded(targetAddr, 0, makeData("k5", "v5"));
     });
   });
 });

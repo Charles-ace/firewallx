@@ -33,7 +33,11 @@ contract FirewallXGuard {
     ) external payable returns (bytes memory returnData) {
         address agentWallet = msg.sender;
 
-        (bool permitted, string memory reason) = registry.isActionPermitted(agentWallet, target, value);
+        // Deterministic fingerprint of the full action: (target, value, calldata).
+        // Lets the Registry enforce identical-payload (loop) limits on-chain.
+        bytes32 calldataHash = keccak256(abi.encodePacked(target, value, data));
+
+        (bool permitted, string memory reason) = registry.isActionPermitted(agentWallet, target, value, calldataHash);
         if (!permitted) {
             revert ExecutionBlocked(reason);
         }

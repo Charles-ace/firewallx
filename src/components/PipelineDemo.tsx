@@ -313,7 +313,7 @@ export const PipelineDemo: React.FC = () => {
             <div className="fade-in-up space-y-2">
               <div className="text-sm font-semibold text-slate-100 flex items-center space-x-2 mb-3">
                 <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Policy engine checks (in-browser)</span>
+                <span>Policy engine checks (in-browser + Guard on-chain)</span>
               </div>
               {['Spend cap', 'Velocity / loop window', 'Destination allow & block lists', 'Anomaly threshold'].map((p, i) => (
                 <div key={p} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 border border-slate-800">

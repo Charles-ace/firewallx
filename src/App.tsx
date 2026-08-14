@@ -29,7 +29,7 @@ const HERO_CONTENT: Record<Exclude<ActiveTab, 'home'>, HeroContent> = {
   telemetry: {
     title: 'AI agent security, scored',
     highlight: 'before it hits the chain.',
-    sub: 'Every action is scored in-browser before it is sent — loop, velocity, and anomaly signals — while the on-chain Guard enforces spend caps, allow/block lists, and the circuit breaker on BOT Chain testnet.',
+    sub: 'Every action is scored in-browser before it is sent — anomaly signals included — while the on-chain Guard enforces spend caps, allow/block lists, velocity, loop limits, and the circuit breaker on BOT Chain testnet.',
     ctaLabel: 'Open Attack Sandbox',
     ctaTarget: 'simulator',
     secondaryLabel: 'Explore Live Telemetry',
@@ -59,7 +59,7 @@ const HERO_CONTENT: Record<Exclude<ActiveTab, 'home'>, HeroContent> = {
     pill: 'Agent policy studio',
     title: 'Fine-grained policies for',
     highlight: 'every agent.',
-    sub: 'Spend caps, velocity limits, loop tripwires, anomaly thresholds, and destination allow/block lists — configured with one API. Spend cap and allow/block lists are enforced on-chain; velocity, loop, and anomaly signals are scored in-browser.',
+    sub: 'Spend caps, velocity limits, loop tripwires, anomaly thresholds, and destination allow/block lists — configured with one API. Spend cap, velocity, loop, and allow/block limits are enforced on-chain by the Guard; six-signal anomaly scoring runs in-browser.',
     ctaLabel: 'Open the Sandbox',
     ctaTarget: 'simulator',
     secondaryLabel: 'See Protected Agents',

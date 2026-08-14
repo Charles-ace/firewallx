@@ -52,7 +52,6 @@ try {
     const blockMatch = text.match(/block #(\d+)/);
     const noEvents = text.includes('No on-chain events indexed yet');
     const txLinks = Array.from(panel.querySelectorAll('a[href*="/tx/"]')).length;
-    const rows = Array.from(panel.querySelectorAll('a[href*="/tx/"]')).map((a) => a.getAttribute('href'));
     return { live, block: blockMatch?.[1] ?? null, noEvents, txLinks, sample: text.slice(text.indexOf('On-Chain Sentinel Events'), text.indexOf('On-Chain Sentinel Events') + 700) };
   });
   console.log('FEED_DETAIL', JSON.stringify(feed));

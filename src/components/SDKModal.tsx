@@ -88,7 +88,7 @@ else:
         </div>
 
 <p className="text-xs text-slate-500">
-  Add 3 lines to any AI agent (LangChain, CrewAI, AutoGPT, or custom bots) to score every action in-browser — loop, velocity, spend, and anomaly signals — and get a verdict before sending. Spend caps and block/allow lists are also enforced by the on-chain Guard when you route through it.
+  Add 3 lines to any AI agent (LangChain, CrewAI, AutoGPT, or custom bots) to score every action in-browser — anomaly signals included — and get a verdict before sending. Spend caps, velocity, loop, and block/allow limits are also enforced by the on-chain Guard when you route through it.
 </p>
 
         {/* Language Tabs & Copy Button */}

@@ -39,6 +39,21 @@ contract FirewallXRegistry {
         uint256 totalTrips;
     }
 
+    /// @dev Rolling window of per-agent transaction timestamps for velocity enforcement.
+    ///      Ring buffer capacity 64 — maxTxPerMinute values >= 64 are not velocity-enforced.
+    struct VelocityState {
+        uint32[64] timestamps;
+        uint8 start;
+        uint8 count;
+    }
+
+    /// @dev Per-fingerprint repetition state for identical-payload (loop) enforcement.
+    ///      One storage slot per distinct (agent, fingerprint) pair within the window.
+    struct RepetitionState {
+        uint32 firstTs;
+        uint16 count;
+    }
+
     // Agent Wallet -> Agent Info
     mapping(address => AgentInfo) public agents;
     // Agent Wallet -> Security Policy
@@ -51,6 +66,11 @@ contract FirewallXRegistry {
     mapping(address => bool) public isSentinel;
     // All registered agent addresses list
     address[] public registeredAgents;
+
+    // Agent Wallet -> rolling tx-timestamp ring buffer (velocity enforcement)
+    mapping(address => VelocityState) private velocityWindow;
+    // Agent Wallet -> fingerprint -> first-ts / count (identical-payload loop enforcement)
+    mapping(address => mapping(bytes32 => RepetitionState)) private repetitionWindow;
 
     address public owner;
 
@@ -218,13 +238,18 @@ contract FirewallXRegistry {
     }
 
     /**
-     * @notice Check whether an agent transaction is permitted under current circuit status & policy
+     * @notice Check whether an agent transaction is permitted under current circuit status & policy.
+     * @dev Stateful: records velocity + repetition-window entries for permitted calls.
+     *      Only call from a transaction that reverts when the action is denied (the Guard does),
+     *      so denied attempts never persist state. `calldataHash` is the keccak256 of
+     *      (target, value, data) computed by the caller.
      */
     function isActionPermitted(
         address agentWallet,
         address target,
-        uint256 value
-    ) external view returns (bool permitted, string memory reason) {
+        uint256 value,
+        bytes32 calldataHash
+    ) external returns (bool permitted, string memory reason) {
         AgentInfo memory agent = agents[agentWallet];
         if (agent.registeredAt == 0) {
             return (false, "Agent not registered");
@@ -247,6 +272,126 @@ contract FirewallXRegistry {
             return (false, "Spend cap exceeded");
         }
 
+        // Velocity: rolling 60s tx-count window (maxTxPerMinute)
+        if (policy.maxTxPerMinute > 0 && policy.maxTxPerMinute < 64) {
+            (bool ok, string memory rateReason) = _recordVelocity(agentWallet, policy.maxTxPerMinute);
+            if (!ok) {
+                return (false, rateReason);
+            }
+        }
+
+        // Loop: identical-payload count within loopWindowSeconds
+        if (policy.maxIdenticalPayloads > 0 && policy.loopWindowSeconds > 0) {
+            (bool ok, string memory loopReason) = _recordRepetition(agentWallet, calldataHash, policy);
+            if (!ok) {
+                return (false, loopReason);
+            }
+        }
+
+        return (true, "OK");
+    }
+
+    /**
+     * @notice View-only preflight mirror of isActionPermitted — no state recorded.
+     */
+    function isActionPermittedView(
+        address agentWallet,
+        address target,
+        uint256 value,
+        bytes32 calldataHash
+    ) external view returns (bool permitted, string memory reason) {
+        AgentInfo memory agent = agents[agentWallet];
+        if (agent.registeredAt == 0) {
+            return (false, "Agent not registered");
+        }
+        if (agent.status == CircuitStatus.TRIPPED) {
+            return (false, "Circuit Breaker TRIPPED");
+        }
+        if (agent.status == CircuitStatus.PAUSED) {
+            return (false, "Agent PAUSED by owner");
+        }
+
+        SecurityPolicy memory policy = policies[agentWallet];
+        if (blocklist[agentWallet][target]) {
+            return (false, "Target in blocklist");
+        }
+        if (policy.enforceAllowlist && !allowlist[agentWallet][target]) {
+            return (false, "Target not in allowlist");
+        }
+        if (policy.maxSpendPerTx > 0 && value > policy.maxSpendPerTx) {
+            return (false, "Spend cap exceeded");
+        }
+        if (policy.maxTxPerMinute > 0 && policy.maxTxPerMinute < 64) {
+            VelocityState storage vs = velocityWindow[agentWallet];
+            uint256 threshold = block.timestamp > 60 ? block.timestamp - 60 : 0;
+            uint256 active = 0;
+            for (uint8 i = 0; i < vs.count; i++) {
+                if (vs.timestamps[(vs.start + i) % 64] >= threshold) {
+                    active++;
+                }
+            }
+            if (active >= policy.maxTxPerMinute) {
+                return (false, "Rate limit exceeded");
+            }
+        }
+        if (policy.maxIdenticalPayloads > 0 && policy.loopWindowSeconds > 0) {
+            RepetitionState storage rep = repetitionWindow[agentWallet][calldataHash];
+            if (rep.firstTs != 0 && block.timestamp <= uint256(rep.firstTs) + policy.loopWindowSeconds) {
+                if (rep.count >= policy.maxIdenticalPayloads) {
+                    return (false, "Repetitive loop detected");
+                }
+            }
+        }
+        return (true, "OK");
+    }
+
+    function _recordVelocity(address agentWallet, uint32 cap) private returns (bool, string memory) {
+        VelocityState storage vs = velocityWindow[agentWallet];
+        uint256 threshold = block.timestamp > 60 ? block.timestamp - 60 : 0;
+        uint8 s = vs.start;
+
+        if (vs.count == 64) {
+            // Ring full: compact live entries to the front, then append
+            uint256 keep = 0;
+            for (uint8 i = 0; i < 64; i++) {
+                uint32 t = vs.timestamps[(s + i) % 64];
+                if (t >= threshold) {
+                    if (keep != i) vs.timestamps[(s + keep) % 64] = t;
+                    keep++;
+                }
+            }
+            if (keep >= cap) return (false, "Rate limit exceeded");
+            vs.timestamps[(s + keep) % 64] = uint32(block.timestamp);
+            vs.count = uint8(keep + 1);
+        } else {
+            uint256 active = 0;
+            for (uint8 i = 0; i < vs.count; i++) {
+                if (vs.timestamps[(s + i) % 64] >= threshold) {
+                    active++;
+                }
+            }
+            if (active >= cap) return (false, "Rate limit exceeded");
+            vs.timestamps[(s + vs.count) % 64] = uint32(block.timestamp);
+            vs.count = uint8(vs.count + 1);
+        }
+        return (true, "OK");
+    }
+
+    function _recordRepetition(
+        address agentWallet,
+        bytes32 calldataHash,
+        SecurityPolicy memory policy
+    ) private returns (bool, string memory) {
+        RepetitionState storage rep = repetitionWindow[agentWallet][calldataHash];
+        if (rep.firstTs == 0 || block.timestamp > uint256(rep.firstTs) + policy.loopWindowSeconds) {
+            rep.firstTs = uint32(block.timestamp);
+            rep.count = 1;
+        } else {
+            if (rep.count >= policy.maxIdenticalPayloads) {
+                return (false, "Repetitive loop detected");
+            }
+            rep.count += 1;
+        }
         return (true, "OK");
     }
 

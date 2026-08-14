@@ -17,13 +17,13 @@ const FEATURES = [
   {
     icon: Zap,
     title: 'Pre-transaction interception',
-    body: 'Every agent action is scored in-browser before it is signed and sent. Spend caps and allow/block lists are additionally enforced on-chain by the Guard — stop waste and exploits at the source.',
+    body: 'Every agent action is scored in-browser before it is signed and sent. Spend caps, velocity, loop, and allow/block limits are additionally enforced on-chain by the Guard — stop waste and exploits at the source.',
     accent: 'bg-blue-50 text-blue-600 ring-blue-100',
   },
   {
     icon: Gauge,
     title: 'Loop & velocity detection',
-    body: 'A sliding-window detector fingerprints identical payloads and velocity bursts per agent in the in-browser engine, tripping the sandbox breaker before a recursive retry loop bleeds a balance. On-chain breaker trips are sentinel/manual.',
+    body: 'A sliding-window detector fingerprints identical payloads and velocity bursts per agent. The Guard enforces both limits on-chain — and the sandbox engine trips its breaker too — before a recursive retry loop bleeds a balance.',
     accent: 'bg-violet-50 text-violet-600 ring-violet-100',
   },
   {
@@ -57,7 +57,7 @@ const VERDICTS = [
     badge: 'BLOCK',
     badgeCls: 'bg-rose-50 text-rose-700 border-rose-200',
     icon: Ban,
-    desc: 'A deterministic check fails (spend cap, allow/block list) on-chain, or the in-browser engine flags loop/anomaly risk. Blocked actions never execute.',
+    desc: 'A deterministic check fails (spend cap, allow/block list, velocity, loop limit) on-chain, or the in-browser engine flags anomaly risk. Blocked actions never execute.',
   },
   {
     badge: 'TRIPPED',
@@ -245,8 +245,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
 <p className="mt-3 text-sm text-slate-500 leading-relaxed">
   Spend caps, hourly velocity, loop windows, identical-payload limits, anomaly thresholds,
   and destination allow/block lists — configured per agent in the Policy Studio or via the SDK.
-  Velocity, loop, and anomaly signals are scored in-browser; spend cap and allow/block lists are
-  enforced on-chain by the Guard.
+  Spend cap, velocity, loop, and allow/block limits are enforced on-chain by the Guard;
+  six-signal anomaly scoring runs in-browser.
 </p>
             </div>
             </Reveal>
@@ -467,7 +467,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
                   <div className="text-xs font-bold text-slate-900 mb-1">Engine: shipped (local)</div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Loop detector, six-signal scorer, policy engine, and circuit breaker run fully in-browser.
+                    Loop detector, six-signal scorer, policy engine, and sandbox circuit breaker run fully in-browser —
+                    while identical-payload loop and velocity limits are enforced on-chain by the Guard.
                     Verdicts are computed from real action payloads and recorded in a local audit log.
                   </p>
                 </div>
