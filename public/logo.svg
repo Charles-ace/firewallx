@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-label="FirewallX">
+  <path d="M32 3.5C32 3.5 8 12.2 8 23.2V40.5C8 53 32 61.5 32 61.5C32 61.5 56 53 56 40.5V23.2C56 12.2 32 3.5 32 3.5Z" fill="#3B82F6"/>
+  <path d="M22.5 32L29.5 39L42 23.5" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

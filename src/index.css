@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #f7f8fc;
+    color: #0f172a;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+/* Entrance animation for staged walkthrough elements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fadeInUp 0.4s ease both;
+}
+
+/* Custom scrollbars for dense feeds */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #eef1f7;
+}
+::-webkit-scrollbar-thumb {
+  background: #c7cedb;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+@layer components {
+  /* ============ BUTTONS (remodeled) ============ */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 select-none whitespace-nowrap cursor-pointer transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-pill {
+    @apply rounded-full;
+  }
+
+  /* Primary — brand blue gradient with soft glow */
+  .btn-primary {
+    @apply btn btn-pill text-white bg-gradient-to-b from-blue-500 to-blue-600 text-xs px-5 py-2.5 font-semibold shadow-[0_8px_20px_-8px_rgba(37,99,235,0.65)] hover:shadow-[0_12px_28px_-8px_rgba(37,99,235,0.75)] hover:-translate-y-px active:translate-y-0 active:scale-[0.97];
+  }
+
+  /* Dark — classic Exa pill, raised on hover */
+  .btn-dark {
+    @apply btn btn-pill text-white bg-slate-900 hover:bg-slate-700 text-xs px-5 py-2.5 font-medium shadow-[0_8px_18px_-8px_rgba(15,23,42,0.5)] hover:shadow-[0_12px_24px_-8px_rgba(15,23,42,0.45)] hover:-translate-y-px active:translate-y-0 active:scale-[0.97];
+  }
+
+  /* Secondary — soft glassy white */
+  .btn-secondary {
+    @apply btn btn-pill text-slate-700 bg-white/70 backdrop-blur border border-slate-200 text-xs px-5 py-2.5 font-medium shadow-sm hover:bg-white hover:border-slate-300 hover:shadow-md hover:-translate-y-px active:translate-y-0 active:scale-[0.97];
+  }
+
+  /* Ghost — text only */
+  .btn-ghost {
+    @apply btn text-slate-500 hover:text-slate-900 hover:bg-slate-100 text-xs px-3 py-2 font-medium rounded-xl;
+  }
+
+  /* Danger / Success */
+  .btn-danger {
+    @apply btn btn-pill text-white bg-gradient-to-b from-rose-500 to-rose-600 text-xs px-5 py-2 font-semibold shadow-[0_8px_18px_-8px_rgba(225,29,72,0.6)] hover:shadow-[0_12px_26px_-8px_rgba(225,29,72,0.7)] hover:-translate-y-px active:translate-y-0 active:scale-[0.97];
+  }
+  .btn-success {
+    @apply btn btn-pill text-white bg-gradient-to-b from-emerald-500 to-emerald-600 text-xs px-5 py-2 font-semibold shadow-[0_8px_18px_-8px_rgba(16,185,129,0.6)] hover:shadow-[0_12px_26px_-8px_rgba(16,185,129,0.7)] hover:-translate-y-px active:translate-y-0 active:scale-[0.97];
+  }
+
+  /* ============ CARDS & INPUTS ============ */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-200 shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-16px_rgba(15,23,42,0.12)];
+  }
+  .card-hover {
+    @apply transition-all duration-200 hover:border-slate-300 hover:shadow-[0_1px_2px_rgba(15,23,42,0.05),0_14px_34px_-16px_rgba(15,23,42,0.18)] hover:-translate-y-0.5;
+  }
+  .input {
+    @apply w-full px-3.5 py-2 text-sm bg-[#f8fafc] border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-medium border;
+  }
+  .eyebrow {
+    @apply text-[11px] font-mono uppercase tracking-[0.18em] font-semibold;
+  }
+}
+
+/* Subtle grid lines for hero bands */
+.cyber-grid {
+  background-size: 44px 44px;
+  background-image:
+    linear-gradient(to right, rgba(15, 23, 42, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.028) 1px, transparent 1px);
+}
+
+.pulse-glow-emerald {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.pulse-glow-crimson {
+  box-shadow: 0 0 15px rgba(244, 63, 94, 0.4);
+}
+
+.pulse-glow-amber {
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+}

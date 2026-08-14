@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": false,
+    "lib": ["ES2022"],
+    "noEmit": true
+  },
+  "include": ["hardhat.config.ts", "contracts", "scripts", "test"],
+  "exclude": ["node_modules", "src"]
+}
