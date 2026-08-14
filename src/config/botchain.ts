@@ -29,10 +29,10 @@ export const BOTCHAIN_TESTNET: NetworkConfig = {
   blockExplorerUrls: ['https://scan.bohr.life'],
   faucetUrl: 'https://faucet.botchain.ai/basic',
   contracts: {
-    registry: '0x8e55ac0a66E9E34376dcCb7D693FeBfF239C3145',
-    auditor: '0x87432661f99EcbD0f1510Eda4a0AfAF5540C93bB',
-    guard: '0x2985B6e0dE7F34c503a52F217927d23bb129aa67',
-    testTarget: '0xc93932A69E2A9868AAAEC4CAaafB9B9DB508a555',
+    registry: '0x3E0E9fbd6516CD5FDEd996E743A91343030C96A1',
+    auditor: '0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A',
+    guard: '0xa9c078278a1164838Ab449e6019A779242605758',
+    testTarget: '0x35810D68685f11a792438E2Fd237A10313015228',
   },
 };
 

@@ -6,7 +6,7 @@ import "./FirewallXAuditor.sol";
 
 /**
  * @title FirewallXGuard
- * @notice Execution Gatekeeper smart account wrapper. Reverts if circuit breaker is tripped or policy violated.
+ * @notice Execution Gatekeeper smart account wrapper. Halts execution if circuit breaker is tripped or policy violated.
  * @author Ace (webski101 / @charlesace)
  */
 contract FirewallXGuard {
@@ -14,6 +14,7 @@ contract FirewallXGuard {
     FirewallXAuditor public immutable auditor;
 
     event GuardedExecution(address indexed agentWallet, address indexed target, uint256 value, bool success);
+    event GuardedExecutionBlocked(address indexed agentWallet, address indexed target, uint256 value, string reason);
 
     error ExecutionBlocked(string reason);
     error TargetCallFailed();
@@ -39,7 +40,12 @@ contract FirewallXGuard {
 
         (bool permitted, string memory reason) = registry.isActionPermitted(agentWallet, target, value, calldataHash);
         if (!permitted) {
-            revert ExecutionBlocked(reason);
+            if (msg.value > 0) {
+                (bool refundOk, ) = payable(agentWallet).call{value: msg.value}("");
+                require(refundOk, "Refund failed");
+            }
+            emit GuardedExecutionBlocked(agentWallet, target, value, reason);
+            return bytes(reason);
         }
 
         // Forward call

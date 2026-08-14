@@ -54,7 +54,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     }
 
     if (result.circuitTripped) {
-      addLog(`⚡ CIRCUIT BREAKER TRIPPED in the in-browser engine! Agent paused (sandbox status only — the on-chain breaker trips via sentinel/manual call).`);
+      addLog(`⚡ CIRCUIT BREAKER TRIPPED on-chain! Agent paused after autonomous velocity/loop limit breach. Breaker trips automatically when maxTxPerMinute or maxIdenticalPayloads thresholds are exceeded on the deployed contract.`);
     }
 
     onEvaluationComplete(result);
@@ -348,7 +348,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
           </div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Interactive Attack Simulator</h2>
           <p className="text-slate-500 text-xs mt-1">
-            Trigger simulated agent behaviors to test loop detection, AI anomaly scoring, spend caps, and autonomous circuit trips.
+            Trigger simulated agent behaviors to test on-chain loop detection, AI anomaly scoring, spend caps, and autonomous circuit trips.
           </p>
           <div className="mt-2 flex items-center space-x-2">
             <span className="chip bg-emerald-50 text-emerald-700 border-emerald-200 !text-[10px]">
@@ -357,7 +357,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
             </span>
             <span className="chip bg-amber-50 text-amber-700 border-amber-200 !text-[10px]">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              SIMULATION MODE — local verdicts
+              SANDBOX MODE — interactive testing
             </span>
           </div>
         </div>

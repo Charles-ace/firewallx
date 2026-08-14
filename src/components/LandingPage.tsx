@@ -17,25 +17,25 @@ const FEATURES = [
   {
     icon: Zap,
     title: 'Pre-transaction interception',
-    body: 'Every agent action is scored in-browser before it is signed and sent. Spend caps, velocity, loop, and allow/block limits are additionally enforced on-chain by the Guard — stop waste and exploits at the source.',
+    body: 'Every agent action is evaluated before execution. Spend caps, velocity rate limits, loop repetition tripwires, and allow/block lists are enforced on-chain by the Guard & Registry — stopping waste and exploits at the source.',
     accent: 'bg-blue-50 text-blue-600 ring-blue-100',
   },
   {
     icon: Gauge,
-    title: 'Loop & velocity detection',
-    body: 'A sliding-window detector fingerprints identical payloads and velocity bursts per agent. The Guard enforces both limits on-chain — and the sandbox engine trips its breaker too — before a recursive retry loop bleeds a balance.',
+    title: 'On-chain loop & velocity detection',
+    body: 'A rolling-window ring buffer and payload repetition tracker evaluate velocity and loop limits directly on-chain. The contract autonomously trips the circuit breaker on sustained violations before recursive calls can drain funds.',
     accent: 'bg-violet-50 text-violet-600 ring-violet-100',
   },
   {
     icon: Cpu,
     title: 'Multi-factor anomaly scoring',
-    body: 'Six signals — repetition, velocity burst, spend deviation, calldata entropy, destination familiarity, and composite risk — score every action from 0 to 1000.',
+    body: 'Six signals — repetition, velocity burst, spend deviation, calldata entropy, destination familiarity, and composite risk — score every action from 0 to 1000 in-browser/SDK.',
     accent: 'bg-amber-50 text-amber-600 ring-amber-100',
   },
   {
     icon: ShieldAlert,
     title: 'Autonomous circuit breaker',
-    body: 'Once tripped, the on-chain breaker pauses the agent — the Guard rejects every follow-up call. Owner-verified policy reset is the only way back — a hard stop when automation itself is the risk.',
+    body: 'When velocity or loop repetition limits are breached, the smart contract autonomously trips the breaker on-chain. The Guard immediately blocks all follow-up calls until an owner reset.',
     accent: 'bg-rose-50 text-rose-600 ring-rose-100',
   },
 ];
@@ -77,9 +77,10 @@ const SIGNALS = [
 ];
 
 const ROADMAP = [
-  ['Sentinel contract suite', 'Deployed and verified on BOT Chain Testnet'],
+  ['Sentinel contract suite', 'Deployed and verified on BOT Chain Testnet (Registry, Auditor, Guard, TestTarget)'],
+  ['On-chain loop & velocity enforcement', 'Active on-chain with autonomous circuit breaker tripping on threshold breaches'],
   ['Event-log indexer', 'Live in the telemetry tab — indexes Registry, Auditor, Guard and TestTarget events via direct RPC polling'],
-  ['On-chain audit settlement', 'Verdicts anchored and independently verifiable via event logs'],
+  ['6-Signal AI anomaly scorer', 'Runs client-side/SDK (entropy math, composite scoring) — roadmap for ZK/TEE oracle verification'],
   ['Gas sponsorship path', 'BOT Chain EOA paymaster integration for frictionless agent transactions'],
 ];
 
@@ -163,7 +164,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
             </h2>
             <p className="mt-4 text-slate-500 text-base leading-relaxed">
               Four layers work together:<span className="font-mono text-slate-700"> intercept → score → enforce → trip</span>.
-              The engine runs fully in-browser today, so the entire pipeline is testable without a wallet.
+              Spend caps, velocity limits, loop tripwires, and autonomous circuit breaker tripping are enforced on-chain by the Guard & Registry, while the 6-signal anomaly scorer runs client-side.
             </p>
           </div>
         </Reveal>
@@ -196,8 +197,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
               </div>
               <h3 className="text-2xl font-bold tracking-tight text-slate-900">Everything resolves to one of four outcomes</h3>
               <p className="mt-3 text-sm text-slate-500 leading-relaxed mb-6">
-                Evaluations are recorded with the triggered rule, anomaly report, and a reproducible local
-                action fingerprint — the same record you see in the audit log.
+                Evaluations are recorded with the triggered rule, anomaly report, and a reproducible action fingerprint — anchored to the on-chain Auditor and local audit trail.
               </p>
               <div className="space-y-3">
                 {VERDICTS.map((v) => (
@@ -245,8 +245,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
 <p className="mt-3 text-sm text-slate-500 leading-relaxed">
   Spend caps, hourly velocity, loop windows, identical-payload limits, anomaly thresholds,
   and destination allow/block lists — configured per agent in the Policy Studio or via the SDK.
-  Spend cap, velocity, loop, and allow/block limits are enforced on-chain by the Guard;
-  six-signal anomaly scoring runs in-browser.
+  Spend cap, velocity, loop, allow/block lists, and autonomous breaker trips are enforced on-chain by the Guard;
+  six-signal anomaly scoring runs client-side.
 </p>
             </div>
             </Reveal>
@@ -269,8 +269,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
                 One pipeline, from agent action to verdict
               </h2>
 <p className="mt-4 text-slate-400 text-sm leading-relaxed">
-  The in-browser engine runs every stage — intercept → score → enforce → trip — and the on-chain Guard
-  enforces spend cap, allow/block lists, and breaker status. The glowing packet traces the live path.
+  The on-chain Guard & Registry enforce spend caps, velocity limits, loop/repetition tripwires, allow/block lists,
+  and autonomous circuit breaker trips directly on BOT Chain, while the 6-signal anomaly scorer runs client-side. The glowing packet traces the live path.
 </p>
             </div>
           </Reveal>
@@ -465,11 +465,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
-                  <div className="text-xs font-bold text-slate-900 mb-1">Engine: shipped (local)</div>
+                  <div className="text-xs font-bold text-slate-900 mb-1">Autonomous Breaker & Limits: On-Chain</div>
                   <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Loop detector, six-signal scorer, policy engine, and sandbox circuit breaker run fully in-browser —
-                    while identical-payload loop and velocity limits are enforced on-chain by the Guard.
-                    Verdicts are computed from real action payloads and recorded in a local audit log.
+                    Identical-payload loop detection, rolling velocity limits, spend caps, and autonomous circuit breaker tripping are enforced directly on-chain by the Guard & Registry.
+                    The 6-signal composite anomaly scorer runs in-browser/SDK with verdicts anchored to the on-chain Auditor.
                   </p>
                 </div>
                 <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60">

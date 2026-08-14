@@ -88,7 +88,7 @@ else:
         </div>
 
 <p className="text-xs text-slate-500">
-  Add 3 lines to any AI agent (LangChain, CrewAI, AutoGPT, or custom bots) to score every action in-browser — anomaly signals included — and get a verdict before sending. Spend caps, velocity, loop, and block/allow limits are also enforced by the on-chain Guard when you route through it.
+  Add 3 lines to any AI agent (LangChain, CrewAI, AutoGPT, or custom bots) to score actions with 6-signal anomaly telemetry and route through the Sentinel Guard. Spend caps, velocity rate limits, loop repetition detection, allow/block lists, and autonomous circuit breaker tripping are enforced directly on-chain on BOT Chain.
 </p>
 
         {/* Language Tabs & Copy Button */}

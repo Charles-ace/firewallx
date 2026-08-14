@@ -154,11 +154,11 @@ export const PublicAuditExplorer: React.FC<PublicAuditExplorerProps> = ({ auditL
             <div className="p-1 rounded-md bg-amber-50">
               <Radio className="w-3.5 h-3.5" />
             </div>
-            <span>LOCAL EVALUATION LEDGER & AUDIT TRAIL</span>
+            <span>EVALUATION LEDGER & AUDIT TRAIL</span>
           </div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">FirewallX Evaluation Ledger</h2>
           <p className="text-slate-500 text-xs mt-1">
-            Every evaluation, intercept, and breaker trip is recorded locally with a reproducible action fingerprint.
+            Every evaluation, intercept, and autonomous breaker trip is recorded with a reproducible action fingerprint, anchored to the on-chain Auditor and local audit trail.
           </p>
         </div>
 
@@ -296,7 +296,7 @@ export const PublicAuditExplorer: React.FC<PublicAuditExplorerProps> = ({ auditL
           </span>
           <span className="text-slate-200">|</span>
           <span>
-            <strong className="text-rose-600">{totalProtected}</strong> blocked in-browser
+            <strong className="text-rose-600">{totalProtected}</strong> blocked on-chain
           </span>
         </div>
 

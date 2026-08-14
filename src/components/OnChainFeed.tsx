@@ -133,7 +133,7 @@ export const OnChainFeed: React.FC = () => {
       )}
 
       <div className="px-4 py-2 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-400">
-        <span>Real chain events — independent of the in-browser simulation engine.</span>
+        <span>Real chain events — indexed directly from the deployed sentinel suite on BOT Chain.</span>
         <span>{events.length} indexed</span>
       </div>
     </div>

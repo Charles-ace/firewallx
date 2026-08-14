@@ -279,7 +279,7 @@ verdict = firewall.evaluate_action(
           </div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Agent Policy & Breaker Management</h2>
           <p className="text-slate-500 text-xs mt-1">
-            Configure spend caps, loop sliding windows, anomaly thresholds, and circuit breaker behavior in the local simulation engine.
+            Configure spend caps, loop sliding windows, anomaly thresholds, and circuit breaker behavior — policies enforced on-chain by the Guard, configured via the Studio for agent registration.
           </p>
         </div>
 

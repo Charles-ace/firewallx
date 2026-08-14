@@ -178,7 +178,28 @@ contract FirewallXRegistry {
     }
 
     /**
-     * @notice Autonomously or manually trip the circuit breaker
+     * @notice Internal helper to autonomously trip the circuit breaker and record state
+     */
+    function _tripCircuitBreakerInternal(
+        address agentWallet,
+        string memory reason,
+        bytes32 triggerPayloadHash
+    ) internal {
+        AgentInfo storage agent = agents[agentWallet];
+        CircuitStatus oldStatus = agent.status;
+        agent.status = CircuitStatus.TRIPPED;
+        agent.lastTripTime = block.timestamp;
+        agent.lastTripReason = reason;
+        agent.lastTripPayloadHash = triggerPayloadHash;
+        agent.totalTrips += 1;
+        agent.totalBlocks += 1;
+
+        emit CircuitBreakerTripped(agentWallet, msg.sender, reason, triggerPayloadHash, block.timestamp);
+        emit AgentStatusChanged(agentWallet, oldStatus, CircuitStatus.TRIPPED, block.timestamp);
+    }
+
+    /**
+     * @notice Manually trip the circuit breaker (sentinel or agent owner)
      */
     function tripCircuitBreaker(
         address agentWallet,
@@ -189,15 +210,7 @@ contract FirewallXRegistry {
         if (agent.registeredAt == 0) revert AgentNotFound();
         if (agent.status == CircuitStatus.TRIPPED) revert CircuitAlreadyTripped();
 
-        CircuitStatus oldStatus = agent.status;
-        agent.status = CircuitStatus.TRIPPED;
-        agent.lastTripTime = block.timestamp;
-        agent.lastTripReason = reason;
-        agent.lastTripPayloadHash = triggerPayloadHash;
-        agent.totalTrips += 1;
-
-        emit CircuitBreakerTripped(agentWallet, msg.sender, reason, triggerPayloadHash, block.timestamp);
-        emit AgentStatusChanged(agentWallet, oldStatus, CircuitStatus.TRIPPED, block.timestamp);
+        _tripCircuitBreakerInternal(agentWallet, reason, triggerPayloadHash);
     }
 
     /**
@@ -239,10 +252,9 @@ contract FirewallXRegistry {
 
     /**
      * @notice Check whether an agent transaction is permitted under current circuit status & policy.
-     * @dev Stateful: records velocity + repetition-window entries for permitted calls.
-     *      Only call from a transaction that reverts when the action is denied (the Guard does),
-     *      so denied attempts never persist state. `calldataHash` is the keccak256 of
-     *      (target, value, data) computed by the caller.
+     * @dev Stateful: records velocity & repetition-window entries for permitted calls.
+     *      Autonomously trips the circuit breaker on-chain if velocity or loop limits are breached.
+     *      `calldataHash` is the keccak256 fingerprint of (target, value, data).
      */
     function isActionPermitted(
         address agentWallet,
@@ -250,7 +262,7 @@ contract FirewallXRegistry {
         uint256 value,
         bytes32 calldataHash
     ) external returns (bool permitted, string memory reason) {
-        AgentInfo memory agent = agents[agentWallet];
+        AgentInfo storage agent = agents[agentWallet];
         if (agent.registeredAt == 0) {
             return (false, "Agent not registered");
         }
@@ -263,18 +275,21 @@ contract FirewallXRegistry {
 
         SecurityPolicy memory policy = policies[agentWallet];
         if (blocklist[agentWallet][target]) {
+            agent.totalBlocks += 1;
             return (false, "Target in blocklist");
         }
         if (policy.enforceAllowlist && !allowlist[agentWallet][target]) {
+            agent.totalBlocks += 1;
             return (false, "Target not in allowlist");
         }
         if (policy.maxSpendPerTx > 0 && value > policy.maxSpendPerTx) {
+            agent.totalBlocks += 1;
             return (false, "Spend cap exceeded");
         }
 
         // Velocity: rolling 60s tx-count window (maxTxPerMinute)
         if (policy.maxTxPerMinute > 0 && policy.maxTxPerMinute < 64) {
-            (bool ok, string memory rateReason) = _recordVelocity(agentWallet, policy.maxTxPerMinute);
+            (bool ok, string memory rateReason) = _recordVelocity(agentWallet, policy.maxTxPerMinute, calldataHash);
             if (!ok) {
                 return (false, rateReason);
             }
@@ -288,11 +303,12 @@ contract FirewallXRegistry {
             }
         }
 
+        agent.totalActionsEvaluated += 1;
         return (true, "OK");
     }
 
     /**
-     * @notice View-only preflight mirror of isActionPermitted — no state recorded.
+     * @notice View-only preflight mirror of isActionPermitted — no state recorded, no trips triggered.
      */
     function isActionPermittedView(
         address agentWallet,
@@ -345,34 +361,34 @@ contract FirewallXRegistry {
         return (true, "OK");
     }
 
-    function _recordVelocity(address agentWallet, uint32 cap) private returns (bool, string memory) {
+    function _recordVelocity(
+        address agentWallet,
+        uint32 maxPerMinute,
+        bytes32 calldataHash
+    ) private returns (bool, string memory) {
         VelocityState storage vs = velocityWindow[agentWallet];
         uint256 threshold = block.timestamp > 60 ? block.timestamp - 60 : 0;
+        uint8 cnt = vs.count;
         uint8 s = vs.start;
+        uint256 active = 0;
 
-        if (vs.count == 64) {
-            // Ring full: compact live entries to the front, then append
-            uint256 keep = 0;
-            for (uint8 i = 0; i < 64; i++) {
-                uint32 t = vs.timestamps[(s + i) % 64];
-                if (t >= threshold) {
-                    if (keep != i) vs.timestamps[(s + keep) % 64] = t;
-                    keep++;
-                }
+        for (uint8 i = 0; i < cnt; i++) {
+            if (vs.timestamps[(s + i) % 64] >= threshold) {
+                active++;
             }
-            if (keep >= cap) return (false, "Rate limit exceeded");
-            vs.timestamps[(s + keep) % 64] = uint32(block.timestamp);
-            vs.count = uint8(keep + 1);
+        }
+
+        if (active >= maxPerMinute) {
+            _tripCircuitBreakerInternal(agentWallet, "Rate limit exceeded", calldataHash);
+            return (false, "Rate limit exceeded");
+        }
+
+        if (cnt < 64) {
+            vs.timestamps[(s + cnt) % 64] = uint32(block.timestamp);
+            vs.count = cnt + 1;
         } else {
-            uint256 active = 0;
-            for (uint8 i = 0; i < vs.count; i++) {
-                if (vs.timestamps[(s + i) % 64] >= threshold) {
-                    active++;
-                }
-            }
-            if (active >= cap) return (false, "Rate limit exceeded");
-            vs.timestamps[(s + vs.count) % 64] = uint32(block.timestamp);
-            vs.count = uint8(vs.count + 1);
+            vs.timestamps[s] = uint32(block.timestamp);
+            vs.start = (s + 1) % 64;
         }
         return (true, "OK");
     }
@@ -386,13 +402,15 @@ contract FirewallXRegistry {
         if (rep.firstTs == 0 || block.timestamp > uint256(rep.firstTs) + policy.loopWindowSeconds) {
             rep.firstTs = uint32(block.timestamp);
             rep.count = 1;
+            return (true, "OK");
         } else {
             if (rep.count >= policy.maxIdenticalPayloads) {
+                _tripCircuitBreakerInternal(agentWallet, "Repetitive loop detected", calldataHash);
                 return (false, "Repetitive loop detected");
             }
             rep.count += 1;
+            return (true, "OK");
         }
-        return (true, "OK");
     }
 
     /**

@@ -1,4 +1,4 @@
-﻿import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET } from '../config/botchain';
 
 // ---------------------------------------------------------------------------
 // On-chain event indexer
@@ -193,6 +193,17 @@ const EVENT_SPECS: Record<ContractName, EventSpec[]> = {
         { name: 'success', type: 'bool', indexed: false },
       ],
       format: (v) => `guard executed → ${short(v.target)} value=${v.value} success=${v.success}`,
+    },
+    {
+      name: 'GuardedExecutionBlocked',
+      topic: '0xa2a708073d841e1738ea41e8f954fbb6716d804b969c1e1fb02059d94deb3842',
+      params: [
+        { name: 'agentWallet', type: 'address', indexed: true },
+        { name: 'target', type: 'address', indexed: true },
+        { name: 'value', type: 'uint256', indexed: false },
+        { name: 'reason', type: 'string', indexed: false },
+      ],
+      format: (v) => `execution halted → ${short(v.target)} reason="${v.reason}"`,
     },
   ],
   testTarget: [

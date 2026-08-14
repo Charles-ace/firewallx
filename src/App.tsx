@@ -29,7 +29,7 @@ const HERO_CONTENT: Record<Exclude<ActiveTab, 'home'>, HeroContent> = {
   telemetry: {
     title: 'AI agent security, scored',
     highlight: 'before it hits the chain.',
-    sub: 'Every action is scored in-browser before it is sent — anomaly signals included — while the on-chain Guard enforces spend caps, allow/block lists, velocity, loop limits, and the circuit breaker on BOT Chain testnet.',
+    sub: 'Every action is pre-checked before execution — with spend caps, allow/block lists, rolling velocity limits, loop tripwires, and autonomous circuit breaker trips enforced directly on-chain by the Guard & Registry on BOT Chain testnet.',
     ctaLabel: 'Open Attack Sandbox',
     ctaTarget: 'simulator',
     secondaryLabel: 'Explore Live Telemetry',
@@ -59,17 +59,17 @@ const HERO_CONTENT: Record<Exclude<ActiveTab, 'home'>, HeroContent> = {
     pill: 'Agent policy studio',
     title: 'Fine-grained policies for',
     highlight: 'every agent.',
-    sub: 'Spend caps, velocity limits, loop tripwires, anomaly thresholds, and destination allow/block lists — configured with one API. Spend cap, velocity, loop, and allow/block limits are enforced on-chain by the Guard; six-signal anomaly scoring runs in-browser.',
+    sub: 'Spend caps, velocity limits, loop tripwires, anomaly thresholds, and destination allow/block lists — configured with one API. Spend cap, velocity, loop, allow/block lists, and autonomous breaker trips are enforced on-chain by the Guard; six-signal anomaly scoring runs client-side.',
     ctaLabel: 'Open the Sandbox',
     ctaTarget: 'simulator',
     secondaryLabel: 'See Protected Agents',
     secondaryTarget: 'telemetry',
   },
   audit: {
-    pill: 'Local evaluation ledger',
+    pill: 'On-chain & local audit ledger',
     title: 'Proof over',
     highlight: 'trust.',
-    sub: 'Every verdict, intercept, and breaker trip is recorded locally with a reproducible action fingerprint. On-chain event-log settlement is pending sentinel contract deployment.',
+    sub: 'Every verdict, intercept, and autonomous circuit breaker trip is recorded with a reproducible action fingerprint, verified on-chain via the deployed FirewallXAuditor contract and live event indexer.',
     ctaLabel: 'Open the Sandbox',
     ctaTarget: 'simulator',
     secondaryLabel: 'Review an Incident',
@@ -287,7 +287,7 @@ export const App: React.FC = () => {
             </span>
             <span>
               Engine:{' '}
-              <span className="text-slate-600">in-browser simulation</span>
+              <span className="text-slate-600">on-chain Guard enforced</span>
             </span>
             <a
               href="https://dev-docs.botchain.ai"
