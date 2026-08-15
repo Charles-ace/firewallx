@@ -445,15 +445,6 @@ export class FirewallEngine {
       }
     }
   }
-
-  public resetCircuitBreaker(agentWallet: string): void {
-    const agent = this.agents.get(agentWallet.toLowerCase());
-    if (agent) {
-      agent.status = 'ACTIVE';
-      agent.consecutiveViolations = 0;
-      this.loopDetector.resetAgent(agentWallet);
-    }
-  }
 }
 
 // Global Singleton for in-app state & demo
