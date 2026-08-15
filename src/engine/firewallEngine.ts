@@ -1,4 +1,4 @@
-﻿import { AgentAction, AgentState, EvaluationResult, SecurityPolicy, VerdictDecision } from './types';
+import { AgentAction, AgentState, EvaluationResult, SecurityPolicy, VerdictDecision } from './types';
 import { LoopDetector } from './loopDetector';
 import { uid } from './uid';
 import { AnomalyScorer } from './anomalyScorer';
@@ -431,6 +431,28 @@ export class FirewallEngine {
 
   public clearAuditLog(): void {
     this.auditLog = [];
+  }
+
+  public tripCircuitBreaker(agentWallet: string, reason: string): void {
+    const agent = this.agents.get(agentWallet.toLowerCase());
+    if (agent) {
+      agent.status = 'TRIPPED';
+      agent.lastTripReason = reason;
+      agent.lastTripTime = Date.now();
+      agent.totalTrips += 1;
+      if (this.onCircuitTripCallback) {
+        this.onCircuitTripCallback(agent, reason);
+      }
+    }
+  }
+
+  public resetCircuitBreaker(agentWallet: string): void {
+    const agent = this.agents.get(agentWallet.toLowerCase());
+    if (agent) {
+      agent.status = 'ACTIVE';
+      agent.consecutiveViolations = 0;
+      this.loopDetector.resetAgent(agentWallet);
+    }
   }
 }
 
