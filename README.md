@@ -1,82 +1,123 @@
-# FirewallX
+# FirewallX — AI Agent Action Firewall & Autonomous Circuit Breaker
 
-AI Agent Action Firewall for BOT Chain — an on-chain smart-contract sentinel suite with autonomous circuit breaker enforcement, paired with an in-browser policy engine and live event telemetry.
+AI Agent Action Firewall for BOT Chain — an on-chain smart-contract sentinel suite with autonomous circuit breaker enforcement, paired with a statistical AI policy engine and live on-chain event telemetry.
 
-> **Standing Principle.** This project strictly separates **on-chain enforcement** from **in-browser / client-side analysis**. Every check that matters — velocity rate limits, identical-payload loop detection, spend caps, allowlists/blocklists, and autonomous circuit breaker tripping — is enforced by the deployed contracts themselves.
+> **Standing Principle.** This project strictly separates **on-chain enforcement** from **client-side statistical analysis**. Every check that matters — velocity rate limits, identical-payload loop detection, spend caps, allowlists/blocklists, and autonomous circuit breaker tripping — is enforced on-chain by the deployed smart contracts.
 
 ---
 
-## What is enforced on-chain (deployed & verified on testnet)
+## Live Demo & Public Verification
 
-The deployed smart-contract suite directly gates *actual* agent transactions. The Guard halts execution before reaching the target when **any** policy rule fails:
+- **Live Application**: [https://firewall-x.vercel.app](https://firewall-x.vercel.app)
+- **GitHub Repository**: [https://github.com/Charles-ace/firewallx](https://github.com/Charles-ace/firewallx)
+- **Target Network**: BOT Chain Testnet (Chain ID: `968`, RPC: `https://rpc.bohr.life`, Explorer: `https://scan.bohr.life`)
 
-| Check | Enforced? | Where | On Breach Behavior |
+---
+
+## 1. What is Enforced On-Chain vs. Client-Side
+
+### A. On-Chain Enforced (Smart Contracts)
+The deployed `FirewallXGuard` and `FirewallXRegistry` smart contracts directly gate transaction execution on BOT Chain:
+
+| Security Constraint | Enforced On-Chain? | Contract / Mechanism | On Breach Behavior |
 |---|---|---|---|
-| Agent is registered | ✅ | Registry `isActionPermitted` | Halts execution (`"Agent not registered"`) |
-| Circuit breaker status (TRIPPED / PAUSED) | ✅ | Registry `isActionPermitted` | Halts execution (`"Circuit Breaker TRIPPED"`) |
-| Destination blocklist | ✅ | Registry `isActionPermitted` | Halts execution (`"Target in blocklist"`) |
-| Destination allowlist (when `enforceAllowlist`) | ✅ | Registry `isActionPermitted` | Halts execution (`"Target not in allowlist"`) |
-| Per-tx spend cap (`maxSpendPerTx`) | ✅ | Registry `isActionPermitted` | Halts execution (`"Spend cap exceeded"`) |
-| Velocity rate limit (`maxTxPerMinute`, rolling 60s) | ✅ | Registry ring buffer | **Autonomously trips circuit breaker on-chain** |
-| Identical-payload loop limit (`maxIdenticalPayloads`, `loopWindowSeconds`) | ✅ | Registry repetition window | **Autonomously trips circuit breaker on-chain** |
+| **Agent Registration Check** | ✅ | `FirewallXRegistry.isActionPermitted` | Execution halted (`"Agent not registered"`) |
+| **Circuit Breaker Status Check** | ✅ | `FirewallXRegistry.isActionPermitted` | Execution halted (`"Circuit Breaker TRIPPED"`) |
+| **Destination Blocklist** | ✅ | `FirewallXRegistry.isActionPermitted` | Execution halted (`"Target in blocklist"`) |
+| **Destination Allowlist** | ✅ | `FirewallXRegistry.isActionPermitted` | Execution halted (`"Target not in allowlist"`) |
+| **Per-Transaction Spend Cap** | ✅ | `FirewallXRegistry.isActionPermitted` | Execution halted (`"Spend cap exceeded"`) |
+| **Velocity Burst Limit** (`maxTxPerMinute`) | ✅ | `FirewallXRegistry` rolling timestamp ring buffer | **Autonomously trips circuit breaker on-chain** |
+| **Identical-Payload Loop Limit** (`maxIdenticalPayloads`) | ✅ | `FirewallXRegistry` per-fingerprint window | **Autonomously trips circuit breaker on-chain** |
+| **Autonomous Circuit Breaker Trip** | ✅ | `FirewallXRegistry` internal state update | Changes `status = TRIPPED`, emits `CircuitBreakerTripped` |
+| **Autonomous Circuit Breaker Reset** | ✅ | `FirewallXRegistry.resetCircuitBreaker` | Restores `status = ACTIVE`, emits `CircuitBreakerReset` |
+| **Execution Gatekeeping & Refund** | ✅ | `FirewallXGuard.executeGuarded` | Forwards call only if permitted; refunds `msg.value` if blocked |
 
-`isActionPermitted(agentWallet, target, value, calldataHash)` (source of truth: `contracts/FirewallXRegistry.sol`) is **stateful**: it maintains rolling timestamp buffers and per-fingerprint repetition state. When a threshold is breached, the contract **autonomously trips the agent's circuit breaker on-chain** (`status = TRIPPED`, `totalTrips += 1`), emits `CircuitBreakerTripped` and `AgentStatusChanged`, and prevents any forward calls to the target.
-
-### Deployed addresses (BOT Chain testnet, chainId 968)
-
-| Contract | Address | Verification Status |
-|---|---|---|
-| `FirewallXRegistry` (v3, autonomous breaker) | `0x3E0E9fbd6516CD5FDEd996E743A91343030C96A1` | Bytecode verified (9,384 bytes) |
-| `FirewallXAuditor` (v3, immutable telemetry) | `0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A` | Bytecode verified (4,428 bytes) |
-| `FirewallXGuard` (v3, gatekeeper & refund) | `0xa9c078278a1164838Ab449e6019A779242605758` | Bytecode verified (1,227 bytes) |
-| `TestTargetContract` (KV store & vault) | `0x35810D68685f11a792438E2Fd237A10313015228` | Bytecode verified (1,570 bytes) |
-
-Explorer links:
-- Registry: https://scan.bohr.life/address/0x3E0E9fbd6516CD5FDEd996E743A91343030C96A1
-- Auditor: https://scan.bohr.life/address/0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A
-- Guard: https://scan.bohr.life/address/0xa9c078278a1164838Ab449e6019A779242605758
-- TestTarget: https://scan.bohr.life/address/0x35810D68685f11a792438E2Fd237A10313015228
+### B. Client-Side / SDK Statistical Analysis (Roadmap Item)
+- **6-Signal AI Anomaly Scorer**: Computes statistical anomaly scores (0–1000) based on calldata entropy, spend deviation, destination novelty, velocity spikes, and composite behavioral baseline.
+- **Auditor Notarization**: Verdicts and anomaly reports can be immutably recorded to `FirewallXAuditor` on-chain for public transparency.
 
 ---
 
-## On-Chain Proof Artifacts (Raw Testnet Transactions)
+## 2. Deployed Contract Addresses (BOT Chain Testnet, Chain ID: 968)
 
-Autonomous Circuit Breaker proof executed against BOT Chain Testnet (`scripts/prove-onchain-autonomous-breaker.ts`):
+| Contract | Address | Verification Status | Explorer Link |
+|---|---|---|---|
+| `FirewallXRegistry` (v3) | `0x3E0E9fbd6516CD5FDEd996E743A91343030C96A1` | Verified (9,384 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0x3E0E9fbd6516CD5FDEd996E743A91343030C96A1) |
+| `FirewallXAuditor` (v3) | `0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A` | Verified (4,428 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A) |
+| `FirewallXGuard` (v3) | `0xa9c078278a1164838Ab449e6019A779242605758` | Verified (1,227 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0xa9c078278a1164838Ab449e6019A779242605758) |
+| `TestTargetContract` | `0x35810D68685f11a792438E2Fd237A10313015228` | Verified (1,570 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0x35810D68685f11a792438E2Fd237A10313015228) |
 
+---
+
+## 3. Verified On-Chain Transaction Proofs
+
+### A. Real Browser UI Interactive Test Run
+Transactions generated by clicking directly through the web UI in the Attack Sandbox:
+
+1. **Loop Call #1 (Allowed)**: [`0x60b2c2db…fb2c`](https://scan.bohr.life/tx/0x60b2c2db2e4e52b88974eac55e92f8e38872e96b1c59b61e0dd905e8a840fb2c)
+2. **Loop Call #2 (Allowed)**: [`0xe72b47c6…0f25`](https://scan.bohr.life/tx/0xe72b47c6ecc2b0a4899a8f0d175688e0a0882aeac8c491c4a05cb41b6d4b0f25)
+3. **Loop Call #3 (Autonomous Breaker Trip)**: [`0x2769ffa6…0bed`](https://scan.bohr.life/tx/0x2769ffa6f5a9a2028ee12e6612ed58e90b311e0c4665c62786dc827bb1b50bed) (Block `#19892107`) — *Tripped breaker on contract; status became TRIPPED, target call blocked.*
+4. **UI Breaker Reset**: [`0x7b87cde5…2e9c`](https://scan.bohr.life/tx/0x7b87cde538953bfd1a530d0ad01ca22dcc837270ac9c13cd47741831e2b42e9c) (Block `#19892129`) — *Invoked `resetCircuitBreaker`, restored status to ACTIVE.*
+5. **Velocity Burst Breach Trip**: [`0x604c0ec5…a7c2`](https://scan.bohr.life/tx/0x604c0ec5554121d641bab51fc295d567016361411d40d68d5611b87a7821a7c2) (Block `#19892143`) — *Tripped breaker on rate limit exceeded.*
+
+### B. Automated Smart Contract Suite Verification
 1. **Agent Registration**: [`0x2120b9f0…c318`](https://scan.bohr.life/tx/0x2120b9f0a515901adbc02c0f4434b66aa831708e265356db5439b693fed3c318) (Block `#19881023`)
-2. **Compliant Call 1 (Allow)**: [`0x50ef2c15…2d15`](https://scan.bohr.life/tx/0x50ef2c157eb0521205070d55ac70b8ede8e1782ac60799db64a25b6ed5732d15) (Block `#19881028`)
-3. **Compliant Call 2 (Allow)**: [`0xad9298c8…0964`](https://scan.bohr.life/tx/0xad9298c8091d43840a7ddd42977378926e14bf76134d3fd53a0a76f969210964) (Block `#19881033`)
-4. **Call 3 (Loop Breaker Trip)**: [`0xa6fca345…a695`](https://scan.bohr.life/tx/0xa6fca345ae89e50a0b5d48fc3deb579d68a03b4ed507050852b2d46532dfa695) (Block `#19881038`) — *Autonomously tripped breaker on-chain! Status became TRIPPED, target protected.*
-5. **Follow-up Blocked by Tripped Breaker**: [`0xd38d2edb…6507`](https://scan.bohr.life/tx/0xd38d2edb37a21f10d408ed4929d52b2154fc657e1a4069335f924f9df57e6507) (Block `#19881043`)
+2. **Compliant Call 1**: [`0x50ef2c15…2d15`](https://scan.bohr.life/tx/0x50ef2c157eb0521205070d55ac70b8ede8e1782ac60799db64a25b6ed5732d15) (Block `#19881028`)
+3. **Compliant Call 2**: [`0xad9298c8…0964`](https://scan.bohr.life/tx/0xad9298c8091d43840a7ddd42977378926e14bf76134d3fd53a0a76f969210964) (Block `#19881033`)
+4. **Call 3 (Loop Breaker Trip)**: [`0xa6fca345…a695`](https://scan.bohr.life/tx/0xa6fca345ae89e50a0b5d48fc3deb579d68a03b4ed507050852b2d46532dfa695) (Block `#19881038`)
+5. **Post-Trip Rejection**: [`0xd38d2edb…6507`](https://scan.bohr.life/tx/0xd38d2edb37a21f10d408ed4929d52b2154fc657e1a4069335f924f9df57e6507) (Block `#19881043`)
 6. **Auditor Record**: [`0xbd2be5b7…ece0`](https://scan.bohr.life/tx/0xbd2be5b7798e4063b2144796f1afbd9a9cacc29a2c7addb45d6c6589615aece0) (Block `#19881048`)
-7. **Reset Breaker on-chain**: [`0xa1788bb8…151d`](https://scan.bohr.life/tx/0xa1788bb819209066d81bacdbc00517a80ad9b423696cc23582d708ecffa4151d) (Block `#19881052`)
-8. **Velocity Tx 1**: [`0x3a99f6ed…531`](https://scan.bohr.life/tx/0x3a99f6edea23ff42ffab5a202d13c69f6084246b82fe17be617c70b0ce76f531)
-9. **Velocity Tx 2**: [`0xf1094e43…82b4`](https://scan.bohr.life/tx/0xf1094e43fee48caaeba8311ce6bdc5ddc12907843fb6701066b19ea8ad8a82b4)
-10. **Velocity Breach Breaker Trip**: [`0x5618ca6c…dd58`](https://scan.bohr.life/tx/0x5618ca6cf72bf1c95bd13919f60d4d7091af1a937854fac02dcdcae07cb9dd58) (Block `#19881065`) — *Autonomously tripped breaker on-chain! Status became TRIPPED.*
-11. **Reset Final**: [`0x98c429a2…b46a`](https://scan.bohr.life/tx/0x98c429a2d61e5eb131e3beb96ad822a9185fa032bd0b6a033e9a27861291b46a)
+7. **Breaker Reset**: [`0xa1788bb8…151d`](https://scan.bohr.life/tx/0xa1788bb819209066d81bacdbc00517a80ad9b423696cc23582d708ecffa4151d) (Block `#19881052`)
+8. **Velocity Burst Breach**: [`0x5618ca6c…dd58`](https://scan.bohr.life/tx/0x5618ca6cf72bf1c95bd13919f60d4d7091af1a937854fac02dcdcae07cb9dd58) (Block `#19881065`)
 
 ---
 
-## Client-Side AI 6-Signal Anomaly Scorer (Roadmap Item)
+## 4. How to Verify & Reproduce Locally
 
-- **6-Signal Anomaly Scoring** (calldata entropy, spend deviation, destination familiarity, velocity spikes, repetition scoring, composite risk) computes client-side / SDK to provide real-time risk scores from 0 to 1000.
-- Evaluated verdicts are logged to `FirewallXAuditor` on-chain for transparent auditing.
-- Future roadmap includes cryptographic ZK-SNARK / TEE oracle verification for zero-knowledge on-chain anomaly proofs.
-
----
-
-## How to Reproduce
-
+### Setup & Local Development
 ```bash
-# 1. Run Unit Tests (Local Hardhat Network)
+# Clone the repository
+git clone https://github.com/Charles-ace/firewallx.git
+cd firewallx
+
+# Install dependencies
+npm install
+
+# Run the frontend locally
+npm run dev
+# App is live on http://localhost:3000
+```
+
+### Smart Contract Testing & Deployment
+```bash
+# Run local contract test suite (Hardhat)
 npm run test:contracts
 
-# 2. Deploy to BOT Chain Testnet
-npm run deploy:testnet
-
-# 3. Verify On-Chain Bytecode
+# Verify on-chain bytecode against testnet
 node scripts/verify-bytecode.mjs
 
-# 4. Run On-Chain Autonomous Breaker Proof
+# Execute raw end-to-end on-chain breaker proof
 node ./node_modules/hardhat/internal/cli/cli.js run scripts/prove-onchain-autonomous-breaker.ts --network botchainTestnet
 ```
+
+### Direct Raw RPC Query (Independent Judge Check)
+Any judge can verify the loop-breaker transaction receipt directly via `curl`:
+```bash
+curl -X POST https://rpc.bohr.life \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc":"2.0",
+    "id":1,
+    "method":"eth_getTransactionReceipt",
+    "params":["0x2769ffa6f5a9a2028ee12e6612ed58e90b311e0c4665c62786dc827bb1b50bed"]
+  }'
+```
+
+---
+
+## 5. Roadmap
+
+- [x] **v1.0 (Current)**: On-chain Guard gatekeeper, stateful Registry with rolling velocity & loop buffers, autonomous circuit breaker trip/reset, immutable Auditor telemetry, and interactive web sandbox on BOT Chain Testnet.
+- [ ] **v1.1 (Mainnet Deployment)**: Deploy verified contracts to BOT Chain Mainnet (Chain ID `677`) following grant approval.
+- [ ] **v1.2 (ZK / TEE Oracle Coprocessor)**: Move statistical 6-signal anomaly scoring into a trust-minimized zero-knowledge coprocessor or TEE enclave for cryptographic on-chain verification.
+- [ ] **v1.3 (Agent Framework Integrations)**: Pre-built middleware wrappers for LangChain, ElizaOS, and AutoGPT.

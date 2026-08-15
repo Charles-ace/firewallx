@@ -1,0 +1,120 @@
+{
+  "url": "http://localhost:3000",
+  "startedAt": "2026-08-15T01:09:43.087Z",
+  "steps": [
+    {
+      "key": "mode",
+      "onChainMode": true
+    },
+    {
+      "key": "loopAttack",
+      "terminalTail": [
+        "<120ms",
+        "6",
+        "Sentinel Registry: 0x3E0E…96A1 deployedAuditor Contract: 0x3F9f…055A deployedEngine: on-chain Guard enforcedDocs",
+        "LIVE AI AGENT ATTACK & INTERCEPTION SANDBOX",
+        "BOT Chain Testnet (On-Chain)",
+        "Local Sandbox",
+        "Agent Wallet",
+        "Target Contract",
+        "Value (tBOT)",
+        "Calldata Hex",
+        "firewallx-sentinel.log",
+        "Clear",
+        "🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)",
+        "BOT Chain Testnet•EVM Compatible•Local evaluation engine"
+      ],
+      "txHashes": [
+        "0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2",
+        "0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006",
+        "0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da"
+      ],
+      "uiText": "\n    FirewallXLive TelemetryAttack SandboxPolicy StudioAudit LogSDKBOT TestnetConnect WalletLive TelemetryAttack SandboxPolicy StudioAudit LogInteractive attack sandboxAttack the firewall. Live.Run runaway loops, spend-cap breaches, entropy bombs, and drainer calls against the engine — watch verdicts resolve in milliseconds.Open Policy StudioView Live Verdicts0.75sFast finality<120msCircuit tripwire6Anomaly signalsSentinel Registry: 0x3E0E…96A1 deployedAuditor Contract: 0x3F9f…055A deployedEngine: on-chain Guard enforcedDocs LIVE AI AGENT ATTACK & INTERCEPTION SANDBOXInteractive Attack SimulatorTrigger attacks against the smart contracts to test on-chain loop detection, velocity limits, and autonomous circuit trips.BOT Chain Testnet (On-Chain)Local SandboxPre-flight Latency: 0.42msReset Agent BreakerAttack Simulation Presets (Live On-Chain)1. Normal PaymentStandard transfer below spend cap. Verdict: ALLOW.2. Runaway Loop AttackFires identical payload bursts. Trips autonomously on-chain at Tx #3.3. Spend Cap BreachRequests 15.0 tBOT exceeding policy cap. Verdict: BLOCK.4. High-Entropy ExploitHigh Shannon entropy obfuscated calldata. Verdict: BLOCK.5. Drainer Phishing CallInteraction with known blocklisted 0xdead target. Verdict: BLOCK.6. Velocity Burst FloodRapid transaction burst exceeding 3 tx/min. Trips on-chain at Tx #4.Custom Action Calldata InjectorAgent WalletTarget ContractValue (tBOT)Calldata HexExecute Guarded Transaction on BOT Chainfirewallx-sentinel.logClear🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)FirewallXAgent Action Firewall & Autonomous Circuit Breaker for BOT Chain.ProductLive TelemetryAttack SandboxPolicy StudioAudit LogIncident CaseAgent SDKDevelopersBOT Chain Dev DocsTestnet Explorer© 2026 FirewallX — AI Agent Action Firewall for BOT Chain.BOT Chain Testnet•EVM Compatible•Local evaluation engine\n    \n  \n"
+    },
+    {
+      "key": "resetAfterLoop",
+      "terminalTail": [
+        "Value (tBOT)",
+        "Calldata Hex",
+        "firewallx-sentinel.log",
+        "Clear",
+        "🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)[2:10:21 AM] 🔄 Resetting Circuit Breaker...[2:10:23 AM] ✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: 0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e (Block #19894638)",
+        "BOT Chain Testnet•EVM Compatible•Local evaluation engine"
+      ],
+      "txHashes": [
+        "0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2",
+        "0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006",
+        "0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da",
+        "0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e"
+      ]
+    },
+    {
+      "key": "velocityBurst",
+      "terminalTail": [
+        "Interactive attack sandbox",
+        "0.75s",
+        "<120ms",
+        "6",
+        "Sentinel Registry: 0x3E0E…96A1 deployedAuditor Contract: 0x3F9f…055A deployedEngine: on-chain Guard enforcedDocs",
+        "LIVE AI AGENT ATTACK & INTERCEPTION SANDBOX",
+        "BOT Chain Testnet (On-Chain)",
+        "Local Sandbox",
+        "Agent Wallet",
+        "Target Contract",
+        "Value (tBOT)",
+        "Calldata Hex",
+        "firewallx-sentinel.log",
+        "Clear",
+        "🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)[2:10:21 AM] 🔄 Resetting Circuit Breaker...[2:10:23 AM] ✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: 0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e (Block #19894638)[2:10:33 AM] ⚡ Running Scenario: High-Frequency Transaction Velocity Burst...[2:10:33 AM] Sending 4 rapid transactions with distinct payloads on BOT Chain Testnet...[2:10:36 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:36 AM] 🔗 On-chain Tx Hash: 0x5edf9801e72076ca1f4564ca8568bbbca709622f7bbea9e2b60b84408d17cf59 (Block #19894655)[2:10:39 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:39 AM] 🔗 On-chain Tx Hash: 0xbed4b7ad148204a0eb2b64638efc3dff2c5fb49f60be2a71eb639ddb8ac01454 (Block #19894659)[2:10:43 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:43 AM] 🔗 On-chain Tx Hash: 0x10593494bc16cc12215d6f37cb963310f72b255c189c7ddf51476b07feefc661 (Block #19894664)[2:10:47 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:47 AM] 🔗 On-chain Tx Hash: 0xf53b1f3d21e15db44432dbd512d253ac47c38d7137590d12a7833d453dbff45d (Block #19894669)",
+        "BOT Chain Testnet•EVM Compatible•Local evaluation engine"
+      ],
+      "txHashes": [
+        "0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2",
+        "0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006",
+        "0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da",
+        "0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e",
+        "0x5edf9801e72076ca1f4564ca8568bbbca709622f7bbea9e2b60b84408d17cf59",
+        "0xbed4b7ad148204a0eb2b64638efc3dff2c5fb49f60be2a71eb639ddb8ac01454",
+        "0x10593494bc16cc12215d6f37cb963310f72b255c189c7ddf51476b07feefc661",
+        "0xf53b1f3d21e15db44432dbd512d253ac47c38d7137590d12a7833d453dbff45d"
+      ],
+      "uiText": "\n    FirewallXLive TelemetryAttack SandboxPolicy StudioAudit LogSDKBOT TestnetConnect WalletLive TelemetryAttack SandboxPolicy StudioAudit LogInteractive attack sandboxAttack the firewall. Live.Run runaway loops, spend-cap breaches, entropy bombs, and drainer calls against the engine — watch verdicts resolve in milliseconds.Open Policy StudioView Live Verdicts0.75sFast finality<120msCircuit tripwire6Anomaly signalsSentinel Registry: 0x3E0E…96A1 deployedAuditor Contract: 0x3F9f…055A deployedEngine: on-chain Guard enforcedDocs LIVE AI AGENT ATTACK & INTERCEPTION SANDBOXInteractive Attack SimulatorTrigger attacks against the smart contracts to test on-chain loop detection, velocity limits, and autonomous circuit trips.BOT Chain Testnet (On-Chain)Local SandboxPre-flight Latency: 0.42msReset Agent BreakerAttack Simulation Presets (Live On-Chain)1. Normal PaymentStandard transfer below spend cap. Verdict: ALLOW.2. Runaway Loop AttackFires identical payload bursts. Trips autonomously on-chain at Tx #3.3. Spend Cap BreachRequests 15.0 tBOT exceeding policy cap. Verdict: BLOCK.4. High-Entropy ExploitHigh Shannon entropy obfuscated calldata. Verdict: BLOCK.5. Drainer Phishing CallInteraction with known blocklisted 0xdead target. Verdict: BLOCK.6. Velocity Burst FloodRapid transaction burst exceeding 3 tx/min. Trips on-chain at Tx #4.Custom Action Calldata InjectorAgent WalletTarget ContractValue (tBOT)Calldata HexExecute Guarded Transaction on BOT Chainfirewallx-sentinel.logClear🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)[2:10:21 AM] 🔄 Resetting Circuit Breaker...[2:10:23 AM] ✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: 0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e (Block #19894638)[2:10:33 AM] ⚡ Running Scenario: High-Frequency Transaction Velocity Burst...[2:10:33 AM] Sending 4 rapid transactions with distinct payloads on BOT Chain Testnet...[2:10:36 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:36 AM] 🔗 On-chain Tx Hash: 0x5edf9801e72076ca1f4564ca8568bbbca709622f7bbea9e2b60b84408d17cf59 (Block #19894655)[2:10:39 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:39 AM] 🔗 On-chain Tx Hash: 0xbed4b7ad148204a0eb2b64638efc3dff2c5fb49f60be2a71eb639ddb8ac01454 (Block #19894659)[2:10:43 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:43 AM] 🔗 On-chain Tx Hash: 0x10593494bc16cc12215d6f37cb963310f72b255c189c7ddf51476b07feefc661 (Block #19894664)[2:10:47 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:47 AM] 🔗 On-chain Tx Hash: 0xf53b1f3d21e15db44432dbd512d253ac47c38d7137590d12a7833d453dbff45d (Block #19894669)FirewallXAgent Action Firewall & Autonomous Circuit Breaker for BOT Chain.ProductLive TelemetryAttack SandboxPolicy StudioAudit LogIncident CaseAgent SDKDevelopersBOT Chain Dev DocsTestnet Explorer© 2026 FirewallX — AI Agent Action Firewall for BOT Chain.BOT Chain Testnet•EVM Compatible•Local evaluation engine\n    \n  \n"
+    },
+    {
+      "key": "finalReset",
+      "terminalTail": [
+        "Value (tBOT)",
+        "Calldata Hex",
+        "firewallx-sentinel.log",
+        "Clear",
+        "🔥 FirewallX Attack & Simulation Engine ReadyTarget: BOT Chain Testnet Sentinel Suite (Chain ID: 968)On-chain mode enabled — attacks trigger real smart contract enforcement.[2:09:58 AM] 🚨 Running Scenario: Recursive Webhook Retry Loop Attack...[2:09:58 AM] Firing identical payload bursts directly to BOT Chain Testnet Guard...[2:09:58 AM] ⚡ Loop iteration #1 broadcasting to chain...[2:10:02 AM] ✅ Tx #1 Allowed by Guard (Tx: 0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2)[2:10:03 AM] ⚡ Loop iteration #2 broadcasting to chain...[2:10:06 AM] ✅ Tx #2 Allowed by Guard (Tx: 0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006)[2:10:07 AM] ⚡ Loop iteration #3 broadcasting to chain...[2:10:15 AM] ⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.[2:10:15 AM] ❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.[2:10:15 AM] 🔗 On-chain Tx Hash: 0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da (Block #19894620)[2:10:21 AM] 🔄 Resetting Circuit Breaker...[2:10:23 AM] ✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: 0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e (Block #19894638)[2:10:33 AM] ⚡ Running Scenario: High-Frequency Transaction Velocity Burst...[2:10:33 AM] Sending 4 rapid transactions with distinct payloads on BOT Chain Testnet...[2:10:36 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:36 AM] 🔗 On-chain Tx Hash: 0x5edf9801e72076ca1f4564ca8568bbbca709622f7bbea9e2b60b84408d17cf59 (Block #19894655)[2:10:39 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:39 AM] 🔗 On-chain Tx Hash: 0xbed4b7ad148204a0eb2b64638efc3dff2c5fb49f60be2a71eb639ddb8ac01454 (Block #19894659)[2:10:43 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:43 AM] 🔗 On-chain Tx Hash: 0x10593494bc16cc12215d6f37cb963310f72b255c189c7ddf51476b07feefc661 (Block #19894664)[2:10:47 AM] ⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).[2:10:47 AM] 🔗 On-chain Tx Hash: 0xf53b1f3d21e15db44432dbd512d253ac47c38d7137590d12a7833d453dbff45d (Block #19894669)[2:10:59 AM] 🔄 Resetting Circuit Breaker...[2:11:03 AM] ✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: 0xec7b15175179c53321970a3119301f17f2e744c3c6d9cf736f2742afa2552691 (Block #19894690)",
+        "BOT Chain Testnet•EVM Compatible•Local evaluation engine"
+      ],
+      "txHashes": [
+        "0xa63b808d4d8edcdf2ae6eafe97134225eb0898fcf24999e4f02c98fda8d089a2",
+        "0xbbda318d908544dae2a028b6be7330bee4e09c97cdf555aab0a6f0bbe6a9d006",
+        "0x32025a9bfc26e4e5ab87630bac6fb29d9797526960fbc0b09288d2c1c87ae7da",
+        "0xeb655361d9df3bed682c3db5751abedd58f137e01781493c77f72e495326602e",
+        "0x5edf9801e72076ca1f4564ca8568bbbca709622f7bbea9e2b60b84408d17cf59",
+        "0xbed4b7ad148204a0eb2b64638efc3dff2c5fb49f60be2a71eb639ddb8ac01454",
+        "0x10593494bc16cc12215d6f37cb963310f72b255c189c7ddf51476b07feefc661",
+        "0xf53b1f3d21e15db44432dbd512d253ac47c38d7137590d12a7833d453dbff45d",
+        "0xec7b15175179c53321970a3119301f17f2e744c3c6d9cf736f2742afa2552691"
+      ]
+    },
+    {
+      "key": "onChainFeed",
+      "hasGuardedExecution": true,
+      "hasBreakerTripped": true,
+      "feedSnippet": "\n    FirewallXLive TelemetryAttack SandboxPolicy StudioAudit LogSDKBOT TestnetConnect WalletLive TelemetryAttack SandboxPolicy StudioAudit LogAI agent security, scored before it hits the chain.Every action is pre-checked before execution — with spend caps, allow/block lists, rolling velocity limits, loop tripwires, and autonomous circuit breaker trips enforced directly on-chain by the Guard & Registry on BOT Chain testnet.Open Attack SandboxExplore Live Telemetry0.75sFast finality<120msCircuit tripwire6Anomaly signalsSentinel Registry: 0x3E0E…96A1 deployedAuditor Contract: 0x3F9f…055A deployedEngine: on-chain Guard enforcedDocs On-Chain Sentinel Eventsindexed from BOT Chain Testnet · rpc.bohr.lifeLIVEblock #19894711· sync 2:11:18 AMRefreshRegistryAgentStatusChanged0xf39f…2266: TRIPPED → ACTIVE#198946900xec7b1517…552691RegistryCircuitBreakerResetbreaker reset for 0xf39f…2266 by 0xf39f…2266#198946900xec7b1517…552691GuardGuardedExecutionBlockedexecution halted → 0x3581…5228 reason=\"Circuit Breaker TRIPPED\"#198946690xf53b1f3d…bff45dGuardGuardedExecutionBlockedexecution halted → 0x3581…5228 reason=\"Circuit Breaker TRIPPED\"#198946640x10593494…efc661GuardGuardedExecutionBlockedexecution halted → 0x3581…5228 reason=\"Circuit Breaker TRIPPED\"#198946590xbed4b7ad…c01454GuardGuardedExecutionBlockedexecution halted → 0x3581…5228 reason=\"Rate limit exceeded\"#198946550x5edf9801…17cf59RegistryAgentStatusChanged0xf39f…2266: ACTIVE → TRIPPED#198946550x5edf9801…17cf59RegistryCircuitBreakerTrippedBREAKER TRIPPED for 0xf39f…2266 by 0xa9c0…5758: Rate limit exceeded#198946550x5edf9801…17cf59RegistryAgentStatusChanged0xf39f…2266: TRIPPED → ACTIVE#198946380xeb655361…26602eRegistryCircuitBreakerResetbreaker reset for 0xf39f…2266 by 0xf39f…2266#198946380xeb655361…26602eGuardGuardedExecutionBlockedexecution halted → 0x3581…5228 reason=\"Repetitive loop detected\"#198946200x32025a9b…7ae7daRegistryAgentStatusChanged0xf39f…2266: ACTIVE → TRIPPED#198946200x32025a9b…7ae7daRegistryCircuitBreakerTripped"
+    },
+    {
+      "key": "pageErrors",
+      "pageErrors": []
+    },
+    {
+      "key": "endedAt",
+      "ts": "2026-08-15T01:11:23.704Z"
+    }
+  ]
+}

@@ -13,7 +13,7 @@ const GUARD_ABI = [
 
 const REGISTRY_ABI = [
   'function resetCircuitBreaker(address agentWallet) external',
-  'function agents(address) external view returns (address agentWallet, address owner, string name, string aidid, uint8 status, uint256 registeredAt, uint256 lastTripTime, string lastTripReason, bytes32 lastTripPayloadHash, uint256 totalActionsEvaluated, uint256 totalBlocks, uint256 totalTrips)',
+  'function agents(address) external view returns (address owner, string name, string aidid, uint8 status, uint256 registeredAt, uint256 lastTripTime, string lastTripReason, bytes32 lastTripPayloadHash, uint256 totalActionsEvaluated, uint256 totalBlocks, uint256 totalTrips)',
   'function updatePolicy(address agentWallet, tuple(uint256 maxSpendPerTx, uint256 maxHourlySpend, uint32 maxTxPerMinute, uint32 loopWindowSeconds, uint32 maxIdenticalPayloads, uint16 anomalyThreshold, bool enforceAllowlist)) external',
   'event CircuitBreakerTripped(address indexed agentWallet, address indexed triggeredBy, string reason, bytes32 indexed payloadHash, uint256 timestamp)',
   'event CircuitBreakerReset(address indexed agentWallet, address indexed resetBy, uint256 timestamp)',
@@ -36,7 +36,7 @@ export interface OnChainExecutionResult {
 
 export class OnChainClient {
   private provider: ethers.JsonRpcProvider;
-  private demoSigner: ethers.Wallet;
+  private demoSigner: ethers.HDNodeWallet;
 
   constructor() {
     this.provider = new ethers.JsonRpcProvider(BOTCHAIN_TESTNET.rpcUrl);
@@ -117,13 +117,13 @@ export class OnChainClient {
     try {
       const agentInfo = await registryContract.agents(agentAddress);
       const statusMap = ['ACTIVE', 'WARNING', 'TRIPPED', 'PAUSED'];
-      statusStr = statusMap[Number(agentInfo[4] ?? agentInfo.status)] || statusStr;
+      statusStr = statusMap[Number(agentInfo.status)] || statusStr;
       if (statusStr === 'TRIPPED') isTripped = true;
     } catch {}
 
     // Trigger indexer to fetch new events right away
     setTimeout(() => {
-      globalOnChainIndexer.pollNow();
+      void globalOnChainIndexer.refresh().catch(() => {});
     }, 1000);
 
     return {
@@ -154,7 +154,7 @@ export class OnChainClient {
     const receipt = await tx.wait();
 
     setTimeout(() => {
-      globalOnChainIndexer.pollNow();
+      void globalOnChainIndexer.refresh().catch(() => {});
     }, 1000);
 
     return {
