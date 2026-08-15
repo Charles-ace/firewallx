@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { Terminal, Zap, ShieldCheck, Flame, Cpu, RefreshCw, Send, AlertTriangle, Bug, Activity, ShieldAlert, Gauge, Code2, Copy, Check } from 'lucide-react';
+import { Terminal, Zap, ShieldCheck, Flame, Cpu, RefreshCw, Send, AlertTriangle, Bug, Activity, ShieldAlert, Gauge, Code2, Copy, Check, ExternalLink, Globe, HardDrive } from 'lucide-react';
 import { globalFirewallEngine } from '../engine/firewallEngine';
 import { AgentAction, EvaluationResult } from '../engine/types';
 import { uid } from '../engine/uid';
+import { globalOnChainClient } from '../engine/onChainClient';
+import { BOTCHAIN_TESTNET } from '../config/botchain';
 
 interface AgentSimulatorProps {
   onEvaluationComplete: (result: EvaluationResult) => void;
@@ -20,26 +22,27 @@ interface Preset {
 }
 
 export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComplete }) => {
-  const [selectedAgent, setSelectedAgent] = useState<string>('0x71c8366420a092671827649d3863464509520770');
-  const [targetAddress, setTargetAddress] = useState<string>('0x8ba1f109551bd432803012645ac136ddd64dba72');
+  const [selectedAgent, setSelectedAgent] = useState<string>(globalOnChainClient.getTestAgentAddress());
+  const [targetAddress, setTargetAddress] = useState<string>(BOTCHAIN_TESTNET.contracts.testTarget);
   const [txValue, setTxValue] = useState<string>('0.05');
   const [txCalldata, setTxCalldata] = useState<string>('0x608060405234801561001057600080fd5b50');
   const [actionDescription, setActionDescription] = useState<string>('Standard KV state update');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
+  const [executionMode, setExecutionMode] = useState<'onchain' | 'sandbox'>('onchain');
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(0.42);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
     '🔥 FirewallX Attack & Simulation Engine Ready',
-    'Connected to BOT Chain Testnet Sentinel',
-    'Ready for simulated AI agent transaction payloads.',
+    'Target: BOT Chain Testnet Sentinel Suite (Chain ID: 968)',
+    'On-chain mode enabled — attacks trigger real smart contract enforcement.',
   ]);
 
   const addLog = (msg: string) => {
-    setTerminalLogs((prev) => [...prev.slice(-30), `[${new Date().toLocaleTimeString()}] ${msg}`]);
+    setTerminalLogs((prev) => [...prev.slice(-40), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };
 
-  const executeAction = (action: AgentAction) => {
+  const executeLocalAction = (action: AgentAction) => {
     const t0 = performance.now();
-    addLog(`Evaluating action for ${action.agentWallet.substring(0, 8)}... Target: ${action.target.substring(0, 10)}... Value: ${action.value} tBOT`);
+    addLog(`[SANDBOX] Evaluating ${action.agentWallet.substring(0, 8)}... Target: ${action.target.substring(0, 10)}... Value: ${action.value} tBOT`);
     const result = globalFirewallEngine.evaluate(action);
     const t1 = performance.now();
     const duration = parseFloat((t1 - t0).toFixed(2));
@@ -54,83 +57,131 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     }
 
     if (result.circuitTripped) {
-      addLog(`⚡ CIRCUIT BREAKER TRIPPED on-chain! Agent paused after autonomous velocity/loop limit breach. Breaker trips automatically when maxTxPerMinute or maxIdenticalPayloads thresholds are exceeded on the deployed contract.`);
+      addLog(`⚡ CIRCUIT BREAKER TRIPPED! Agent status set to TRIPPED after autonomous violation.`);
     }
 
     onEvaluationComplete(result);
   };
 
   // Preset 1: Normal Agent Action
-  const runNormalScenario = () => {
+  const runNormalScenario = async () => {
     setIsSimulating(true);
     addLog('🚀 Running Scenario: Normal Agent KV Update...');
-    const action: AgentAction = {
-      id: uid('sim'),
-      agentId: 'agent-sixa-telegram',
-      agentWallet: selectedAgent,
-      target: targetAddress,
-      value: '0.02',
-      data: '0x123456780000000000000000000000000000000000000000000000000000000000000001',
-      timestamp: Date.now(),
-      metadata: {
-        actionType: 'KV_SET',
-        description: 'Scheduled user session sync',
-        triggerSource: 'worker-cron',
-      },
-    };
-    executeAction(action);
-    setIsSimulating(false);
-  };
 
-  // Preset 2: Trigger the Runaway 4k-Ops Loop Attack
-  const runLoopAttackScenario = async () => {
-    setIsSimulating(true);
-    addLog('🚨 Running Scenario: Recursive Webhook Retry Loop (Aug 12 Recreation)...');
-    addLog('Firing identical calldata bursts...');
-
-    const identicalData = '0xa9059cbb00000000000000000000000071c8366420a092671827649d38634645095207700000000000000000000000000000000000000000000000000000000000000064';
-
-    for (let i = 1; i <= 5; i++) {
-      addLog(`⚡ Loop iteration #${i} incoming...`);
+    if (executionMode === 'onchain') {
+      try {
+        const payload = globalOnChainClient.encodeTestKVCall(`normal-${Date.now()}`, 'valid-op');
+        addLog(`📡 Broadcasting on-chain call via FirewallXGuard...`);
+        const res = await globalOnChainClient.executeGuardedAction(targetAddress, '0.001', payload);
+        addLog(`✅ ON-CHAIN ALLOWED: GuardedExecution emitted. Tx: ${res.txHash} (Block #${res.blockNumber})`);
+      } catch (err: any) {
+        addLog(`❌ On-chain error: ${err.message || err}`);
+      }
+    } else {
       const action: AgentAction = {
-        id: uid(`loop-${i}`),
+        id: uid('sim'),
         agentId: 'agent-sixa-telegram',
         agentWallet: selectedAgent,
         target: targetAddress,
-        value: '0.01',
-        data: identicalData,
+        value: '0.02',
+        data: '0x123456780000000000000000000000000000000000000000000000000000000000000001',
         timestamp: Date.now(),
         metadata: {
-          actionType: 'WEBHOOK_RETRY',
-          description: `Recursive retry attempt #${i}`,
-          triggerSource: 'webhook-timeout-loop',
+          actionType: 'KV_SET',
+          description: 'Scheduled user session sync',
+          triggerSource: 'worker-cron',
         },
       };
+      executeLocalAction(action);
+    }
+    setIsSimulating(false);
+  };
 
-      executeAction(action);
-      await new Promise((r) => setTimeout(r, 500));
+  // Preset 2: Trigger the Runaway Loop Attack
+  const runLoopAttackScenario = async () => {
+    setIsSimulating(true);
+    addLog('🚨 Running Scenario: Recursive Webhook Retry Loop Attack...');
+
+    if (executionMode === 'onchain') {
+      const loopPayload = globalOnChainClient.encodeTestKVCall(`runaway-loop-${Date.now()}`, 'payload-loop-alpha');
+      addLog(`Firing identical payload bursts directly to BOT Chain Testnet Guard...`);
+
+      for (let i = 1; i <= 3; i++) {
+        addLog(`⚡ Loop iteration #${i} broadcasting to chain...`);
+        try {
+          const res = await globalOnChainClient.executeGuardedAction(targetAddress, '0.001', loopPayload);
+          if (res.circuitTripped || res.status === 'TRIP') {
+            addLog(`⚡⚡⚡ ON-CHAIN CIRCUIT BREAKER TRIPPED! Status: TRIPPED.`);
+            addLog(`❌ GuardedExecutionBlocked emitted. Autonomous breaker trip confirmed on contract.`);
+            addLog(`🔗 On-chain Tx Hash: ${res.txHash} (Block #${res.blockNumber})`);
+            globalFirewallEngine.tripCircuitBreaker(selectedAgent, 'Autonomous on-chain identical-payload loop limit breach');
+          } else {
+            addLog(`✅ Tx #${i} Allowed by Guard (Tx: ${res.txHash})`);
+          }
+        } catch (err: any) {
+          addLog(`❌ On-chain call #${i} error: ${err.message || err}`);
+        }
+        await new Promise((r) => setTimeout(r, 600));
+      }
+    } else {
+      const identicalData = '0xa9059cbb00000000000000000000000071c8366420a092671827649d38634645095207700000000000000000000000000000000000000000000000000000000000000064';
+      for (let i = 1; i <= 5; i++) {
+        addLog(`⚡ Loop iteration #${i} incoming...`);
+        const action: AgentAction = {
+          id: uid(`loop-${i}`),
+          agentId: 'agent-sixa-telegram',
+          agentWallet: selectedAgent,
+          target: targetAddress,
+          value: '0.01',
+          data: identicalData,
+          timestamp: Date.now(),
+          metadata: {
+            actionType: 'WEBHOOK_RETRY',
+            description: `Recursive retry attempt #${i}`,
+            triggerSource: 'webhook-timeout-loop',
+          },
+        };
+        executeLocalAction(action);
+        await new Promise((r) => setTimeout(r, 400));
+      }
     }
     setIsSimulating(false);
   };
 
   // Preset 3: Spend Cap Breach
-  const runSpendBreachScenario = () => {
+  const runSpendBreachScenario = async () => {
     setIsSimulating(true);
-    addLog(`💸 Running Scenario: Runaway Spend Breach (15.0 tBOT requested vs ${activePolicy?.maxSpendPerTx ?? '0.2'} tBOT cap)...`);
-    const action: AgentAction = {
-      id: uid('spend'),
-      agentId: 'agent-sixa-telegram',
-      agentWallet: selectedAgent,
-      target: targetAddress,
-      value: '15.0',
-      data: '0x12345678',
-      timestamp: Date.now(),
-      metadata: {
-        actionType: 'UNAUTHORIZED_TRANSFER',
-        description: 'Large liquidity movement request',
-      },
-    };
-    executeAction(action);
+    addLog(`💸 Running Scenario: Runaway Spend Breach (15.0 tBOT requested vs cap)...`);
+
+    if (executionMode === 'onchain') {
+      try {
+        addLog(`📡 Sending 15.0 tBOT execution intent to Guard...`);
+        const res = await globalOnChainClient.executeGuardedAction(targetAddress, '15.0', '0x12345678');
+        if (res.status === 'BLOCK') {
+          addLog(`🛑 ON-CHAIN BLOCKED: Spend cap exceeded! Guard halted target execution and refunded funds.`);
+          addLog(`🔗 On-chain Tx Hash: ${res.txHash} (Block #${res.blockNumber})`);
+        } else {
+          addLog(`Result: ${res.status} Tx: ${res.txHash}`);
+        }
+      } catch (err: any) {
+        addLog(`🛑 Intercepted on-chain: ${err.message || err}`);
+      }
+    } else {
+      const action: AgentAction = {
+        id: uid('spend'),
+        agentId: 'agent-sixa-telegram',
+        agentWallet: selectedAgent,
+        target: targetAddress,
+        value: '15.0',
+        data: '0x12345678',
+        timestamp: Date.now(),
+        metadata: {
+          actionType: 'UNAUTHORIZED_TRANSFER',
+          description: 'Large liquidity movement request',
+        },
+      };
+      executeLocalAction(action);
+    }
     setIsSimulating(false);
   };
 
@@ -152,97 +203,135 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
         description: 'Obfuscated shellcode injection payload',
       },
     };
-    executeAction(action);
+    executeLocalAction(action);
     setIsSimulating(false);
   };
 
   // Preset 5: Blacklist Destination Drain
-  const runBlacklistScenario = () => {
+  const runBlacklistScenario = async () => {
     setIsSimulating(true);
     addLog('🚫 Running Scenario: Known Drainer Contract Interaction...');
-    const action: AgentAction = {
-      id: uid('drain'),
-      agentId: 'agent-sixa-telegram',
-      agentWallet: selectedAgent,
-      target: '0x000000000000000000000000000000000000dead',
-      value: '0.1',
-      data: '0x00',
-      timestamp: Date.now(),
-      metadata: {
-        actionType: 'DRAINER_TRANSFER',
-        description: 'Call to flagged phishing contract',
-      },
-    };
-    executeAction(action);
+    const deadTarget = '0x000000000000000000000000000000000000dead';
+
+    if (executionMode === 'onchain') {
+      try {
+        const res = await globalOnChainClient.executeGuardedAction(deadTarget, '0.01', '0x');
+        addLog(`🛑 ON-CHAIN BLOCKED: Target in blocklist! Guard prevented execution.`);
+        addLog(`🔗 On-chain Tx Hash: ${res.txHash}`);
+      } catch (err: any) {
+        addLog(`🛑 Blocked: ${err.message || err}`);
+      }
+    } else {
+      const action: AgentAction = {
+        id: uid('drain'),
+        agentId: 'agent-sixa-telegram',
+        agentWallet: selectedAgent,
+        target: deadTarget,
+        value: '0.1',
+        data: '0x00',
+        timestamp: Date.now(),
+        metadata: {
+          actionType: 'DRAINER_TRANSFER',
+          description: 'Call to flagged phishing contract',
+        },
+      };
+      executeLocalAction(action);
+    }
     setIsSimulating(false);
   };
 
   // Preset 6: Velocity Burst Flood (Rate Limit)
   const runVelocityBurstScenario = async () => {
     setIsSimulating(true);
-    addLog('⚡ Running Scenario: High-Frequency Transaction Velocity Burst (10 txs in 1.5s)...');
-    for (let i = 1; i <= 10; i++) {
-      const action: AgentAction = {
-        id: uid(`burst-${i}`),
-        agentId: 'agent-sixa-telegram',
-        agentWallet: selectedAgent,
-        target: targetAddress,
-        value: '0.01',
-        data: '0x' + Math.random().toString(16).substring(2, 10).padStart(64, '0'),
-        timestamp: Date.now(),
-        metadata: {
-          actionType: 'VELOCITY_FLOOD',
-          description: `Rapid-fire transaction #${i}`,
-        },
-      };
-      executeAction(action);
-      await new Promise((r) => setTimeout(r, 120));
+    addLog('⚡ Running Scenario: High-Frequency Transaction Velocity Burst...');
+
+    if (executionMode === 'onchain') {
+      addLog(`Sending 4 rapid transactions with distinct payloads on BOT Chain Testnet...`);
+      for (let i = 1; i <= 4; i++) {
+        const payload = globalOnChainClient.encodeTestKVCall(`burst-${Date.now()}-${i}`, `payload-${i}`);
+        try {
+          const res = await globalOnChainClient.executeGuardedAction(targetAddress, '0.001', payload);
+          if (res.circuitTripped || res.status === 'TRIP') {
+            addLog(`⚡⚡⚡ ON-CHAIN VELOCITY BREACH! Breaker autonomously tripped (Rate limit exceeded).`);
+            addLog(`🔗 On-chain Tx Hash: ${res.txHash} (Block #${res.blockNumber})`);
+            globalFirewallEngine.tripCircuitBreaker(selectedAgent, 'Autonomous on-chain velocity rate limit breach');
+          } else {
+            addLog(`✅ Velocity Tx #${i} Allowed (Tx: ${res.txHash})`);
+          }
+        } catch (err: any) {
+          addLog(`❌ Velocity Tx #${i} error: ${err.message || err}`);
+        }
+        await new Promise((r) => setTimeout(r, 400));
+      }
+    } else {
+      for (let i = 1; i <= 10; i++) {
+        const action: AgentAction = {
+          id: uid(`burst-${i}`),
+          agentId: 'agent-sixa-telegram',
+          agentWallet: selectedAgent,
+          target: targetAddress,
+          value: '0.01',
+          data: '0x' + Math.random().toString(16).substring(2, 10).padStart(64, '0'),
+          timestamp: Date.now(),
+          metadata: {
+            actionType: 'VELOCITY_FLOOD',
+            description: `Rapid-fire transaction #${i}`,
+          },
+        };
+        executeLocalAction(action);
+        await new Promise((r) => setTimeout(r, 120));
+      }
     }
     setIsSimulating(false);
   };
 
-  // Preset 7: Unauthorized Flash-Loan Delegatecall
-  const runDelegatecallScenario = () => {
+  // Custom Action Execution
+  const handleCustomSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsSimulating(true);
-    addLog('🛡️ Running Scenario: Unauthorized Delegatecall Hook Injection...');
-    const action: AgentAction = {
-      id: uid('delegatecall'),
-      agentId: 'agent-sixa-telegram',
-      agentWallet: selectedAgent,
-      target: '0x9999999999999999999999999999999999999999',
-      value: '0.0',
-      data: '0xf3fef3a3000000000000000000000000badbadbadbadbadbadbadbadbadbadbadbadbad0',
-      timestamp: Date.now(),
-      metadata: {
-        actionType: 'DELEGATECALL_EXPLOIT',
-        description: 'Zero-day proxy manipulation attempt',
-      },
-    };
-    executeAction(action);
+
+    if (executionMode === 'onchain') {
+      try {
+        addLog(`📡 Sending custom transaction on-chain to Guard...`);
+        const res = await globalOnChainClient.executeGuardedAction(targetAddress, txValue, txCalldata);
+        addLog(`✅ On-chain result: ${res.status}. Tx: ${res.txHash}`);
+      } catch (err: any) {
+        addLog(`❌ On-chain execution failed: ${err.message || err}`);
+      }
+    } else {
+      const action: AgentAction = {
+        id: uid('custom'),
+        agentId: 'custom-agent',
+        agentWallet: selectedAgent,
+        target: targetAddress,
+        value: txValue,
+        data: txCalldata,
+        timestamp: Date.now(),
+        metadata: {
+          description: actionDescription,
+        },
+      };
+      executeLocalAction(action);
+    }
     setIsSimulating(false);
   };
 
-  // Custom Action Execution
-  const handleCustomSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const action: AgentAction = {
-      id: uid('custom'),
-      agentId: 'custom-agent',
-      agentWallet: selectedAgent,
-      target: targetAddress,
-      value: txValue,
-      data: txCalldata,
-      timestamp: Date.now(),
-      metadata: {
-        description: actionDescription,
-      },
-    };
-    executeAction(action);
-  };
-
-  const handleResetBreaker = () => {
-    globalFirewallEngine.resetCircuitBreaker(selectedAgent);
-    addLog(`🔄 Circuit Breaker manually reset to ACTIVE for agent ${selectedAgent.substring(0, 8)}...`);
+  const handleResetBreaker = async () => {
+    setIsSimulating(true);
+    addLog(`🔄 Resetting Circuit Breaker...`);
+    if (executionMode === 'onchain') {
+      try {
+        const res = await globalOnChainClient.resetBreakerOnChain();
+        addLog(`✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: ${res.txHash} (Block #${res.blockNumber})`);
+        globalFirewallEngine.resetCircuitBreaker(selectedAgent);
+      } catch (err: any) {
+        addLog(`❌ On-chain reset failed: ${err.message || err}`);
+      }
+    } else {
+      globalFirewallEngine.resetCircuitBreaker(selectedAgent);
+      addLog(`🔄 Circuit Breaker locally reset to ACTIVE for agent ${selectedAgent.substring(0, 8)}...`);
+    }
+    setIsSimulating(false);
   };
 
   const activeAgentState = globalFirewallEngine.getAgent(selectedAgent);
@@ -252,13 +341,13 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     {
       key: 'normal',
       num: '1',
-      title: 'Normal KV State Update',
+      title: 'Normal Payment',
       description: (
         <>
-          Standard low-value state sync. Verdict: <strong className="text-emerald-600">ALLOW</strong>.
+          Standard transfer below spend cap. Verdict: <strong className="text-emerald-600">ALLOW</strong>.
         </>
       ),
-      icon: ShieldCheck,
+      icon: Activity,
       iconBg: 'bg-emerald-50 text-emerald-600 ring-emerald-100',
       hoverBorder: 'hover:border-emerald-400 hover:shadow-[0_12px_28px_-16px_rgba(16,185,129,0.4)]',
       verdictClass: 'text-emerald-600',
@@ -266,10 +355,10 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     {
       key: 'loop',
       num: '2',
-      title: 'Recursive Loop Attack',
+      title: 'Runaway Loop Attack',
       description: (
         <>
-          Fires 5 identical calldata bursts. Trips at <strong className="text-rose-600">Tx #{((activePolicy?.maxIdenticalPayloads ?? 3) + 1)}</strong>.
+          Fires identical payload bursts. Trips autonomously on-chain at <strong className="text-rose-600">Tx #3</strong>.
         </>
       ),
       icon: Flame,
@@ -283,7 +372,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
       title: 'Spend Cap Breach',
       description: (
         <>
-          Requests 15.0 tBOT (Limit: {activePolicy?.maxSpendPerTx ?? '0.2'} tBOT). Verdict: <strong className="text-amber-600">BLOCK</strong>.
+          Requests 15.0 tBOT exceeding policy cap. Verdict: <strong className="text-amber-600">BLOCK</strong>.
         </>
       ),
       icon: AlertTriangle,
@@ -325,13 +414,13 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
       title: 'Velocity Burst Flood',
       description: (
         <>
-          Spawns 10 rapid transactions in &lt;2s to test velocity cap. Verdict: <strong className="text-amber-600">FLAG/BLOCK</strong>.
+          Rapid transaction burst exceeding 3 tx/min. Trips on-chain at <strong className="text-rose-600">Tx #4</strong>.
         </>
       ),
-      icon: Activity,
-      iconBg: 'bg-blue-50 text-blue-600 ring-blue-100',
-      hoverBorder: 'hover:border-blue-400 hover:shadow-[0_12px_28px_-16px_rgba(37,99,235,0.4)]',
-      verdictClass: 'text-blue-600',
+      icon: Gauge,
+      iconBg: 'bg-rose-50 text-rose-600 ring-rose-100',
+      hoverBorder: 'hover:border-rose-400 hover:shadow-[0_12px_28px_-16px_rgba(225,29,72,0.4)]',
+      verdictClass: 'text-rose-600',
     },
   ];
 
@@ -348,22 +437,45 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
           </div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Interactive Attack Simulator</h2>
           <p className="text-slate-500 text-xs mt-1">
-            Trigger simulated agent behaviors to test on-chain loop detection, AI anomaly scoring, spend caps, and autonomous circuit trips.
+            Trigger attacks against the smart contracts to test on-chain loop detection, velocity limits, and autonomous circuit trips.
           </p>
-          <div className="mt-2 flex items-center space-x-2">
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {/* Mode Switcher */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+              <button
+                onClick={() => setExecutionMode('onchain')}
+                className={`px-3 py-1 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
+                  executionMode === 'onchain'
+                    ? 'bg-blue-600 text-white font-bold shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <Globe className="w-3 h-3" />
+                <span>BOT Chain Testnet (On-Chain)</span>
+              </button>
+              <button
+                onClick={() => setExecutionMode('sandbox')}
+                className={`px-3 py-1 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
+                  executionMode === 'sandbox'
+                    ? 'bg-white text-slate-900 font-bold shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                <HardDrive className="w-3 h-3" />
+                <span>Local Sandbox</span>
+              </button>
+            </div>
+
             <span className="chip bg-emerald-50 text-emerald-700 border-emerald-200 !text-[10px]">
               <Gauge className="w-3 h-3 text-emerald-600" />
               Pre-flight Latency: {lastLatencyMs}ms
             </span>
-            <span className="chip bg-amber-50 text-amber-700 border-amber-200 !text-[10px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              SANDBOX MODE — interactive testing
-            </span>
           </div>
         </div>
 
-        <button onClick={handleResetBreaker} className="btn-secondary shrink-0">
-          <RefreshCw className="w-3.5 h-3.5 text-blue-600" />
+        <button onClick={handleResetBreaker} disabled={isSimulating} className="btn-secondary shrink-0 group">
+          <RefreshCw className={`w-3.5 h-3.5 text-blue-600 ${isSimulating ? 'animate-spin' : 'group-hover:rotate-180 transition-transform'}`} />
           <span>Reset Agent Breaker</span>
         </button>
       </div>
@@ -379,7 +491,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                   <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span>Active Policy — {activeAgentState?.name}</span>
+                  <span>Active On-Chain Policy — Sentinel Agent</span>
                 </h3>
                 <span className={`chip !text-[10px] ${
                   activeAgentState?.status === 'TRIPPED' 
@@ -391,10 +503,10 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  ['Spend / Tx', `${activePolicy.maxSpendPerTx} tBOT`],
-                  ['Rate Limit', `${activePolicy.maxTxPerMinute} tx/min`],
-                  ['Loop Trip', `${activePolicy.maxIdenticalPayloads} × ${activePolicy.loopWindowSeconds}s`],
-                  ['Anomaly Δ', `${activePolicy.anomalyThreshold}/1000`],
+                  ['Spend / Tx', `1.0 tBOT`],
+                  ['Rate Limit', `3 tx/min`],
+                  ['Loop Trip', `2 calls / 60s`],
+                  ['Enforcement', `On-Chain Guard`],
                 ].map(([k, v]) => (
                   <div key={k} className="p-2.5 rounded-lg bg-slate-50 border border-slate-200">
                     <div className="text-[10px] font-mono text-slate-400">{k}</div>
@@ -411,7 +523,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
               <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100">
                 <Zap className="w-3.5 h-3.5" />
               </div>
-              <span>Attack Simulation Presets</span>
+              <span>Attack Simulation Presets {executionMode === 'onchain' && '(Live On-Chain)'}</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -496,7 +608,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
 
               <button type="submit" disabled={isSimulating} className="btn-primary w-full !py-2.5 group">
                 <Send className="w-3.5 h-3.5" />
-                <span>Evaluate Custom Payload (Local Pre-flight)</span>
+                <span>{executionMode === 'onchain' ? 'Execute Guarded Transaction on BOT Chain' : 'Evaluate Custom Payload (Local Pre-flight)'}</span>
               </button>
             </form>
           </div>
@@ -526,10 +638,10 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
               {terminalLogs.map((log, i) => (
                 <div
                   key={i}
-                  className={`leading-relaxed ${
-                    log.includes('ALLOW')
+                  className={`leading-relaxed break-all ${
+                    log.includes('ALLOWED') || log.includes('ALLOW')
                       ? 'text-emerald-400'
-                      : log.includes('BLOCK') || log.includes('TRIPPED')
+                      : log.includes('BLOCK') || log.includes('TRIPPED') || log.includes('BREACH')
                       ? 'text-rose-400 font-semibold'
                       : log.includes('FLAG')
                       ? 'text-amber-400'

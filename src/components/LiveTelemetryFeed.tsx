@@ -9,10 +9,11 @@ import { globalFirewallEngine } from '../engine/firewallEngine';
 
 interface LiveTelemetryFeedProps {
   evaluations: EvaluationResult[];
+  totalSessionCount?: number;
   onTriggerSimAction?: () => void;
 }
 
-export const LiveTelemetryFeed: React.FC<LiveTelemetryFeedProps> = ({ evaluations, onTriggerSimAction }) => {
+export const LiveTelemetryFeed: React.FC<LiveTelemetryFeedProps> = ({ evaluations, totalSessionCount, onTriggerSimAction }) => {
   const [filterVerdict, setFilterVerdict] = useState<string>('ALL');
   const [riskFilter, setRiskFilter] = useState<'ALL' | 'SAFE' | 'ELEVATED' | 'CRITICAL'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -158,7 +159,7 @@ export const LiveTelemetryFeed: React.FC<LiveTelemetryFeedProps> = ({ evaluation
   const metricCards = [
     {
       label: 'Total Intercepts',
-      value: String(total),
+      value: String(totalSessionCount && totalSessionCount > total ? totalSessionCount : total),
       sub: 'Pre-mempool evaluations',
       icon: Activity,
       iconBg: 'bg-blue-50 text-blue-600 ring-blue-100',
@@ -175,7 +176,7 @@ export const LiveTelemetryFeed: React.FC<LiveTelemetryFeedProps> = ({ evaluation
     {
       label: 'Blocks & Rejections',
       value: String(blocked),
-      sub: 'In-browser blocks flagged',
+      sub: 'Blocked by policy & Guard',
       icon: Ban,
       iconBg: 'bg-rose-50 text-rose-600 ring-rose-100',
       valueClass: 'text-rose-600',

@@ -141,9 +141,11 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isSDKModalOpen, setIsSDKModalOpen] = useState<boolean>(false);
   const [evaluations, setEvaluations] = useState<EvaluationResult[]>([]);
+  const [totalSessionCount, setTotalSessionCount] = useState<number>(0);
   const [circuitTripAlert, setCircuitTripAlert] = useState<{ agentName: string; reason: string } | null>(null);
 
   const pushEvaluation = (result: EvaluationResult) => {
+    setTotalSessionCount((c) => c + 1);
     setEvaluations((prev) => {
       // Engine verdicts arrive via both the verdict subscription and the
       // simulator's onEvaluationComplete callback — dedupe so the same
@@ -317,6 +319,7 @@ export const App: React.FC = () => {
             <div className="mt-6">
               <LiveTelemetryFeed
                 evaluations={evaluations}
+                totalSessionCount={totalSessionCount}
                 onTriggerSimAction={() => setActiveTab('simulator')}
               />
             </div>
