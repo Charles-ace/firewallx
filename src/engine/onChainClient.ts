@@ -6,16 +6,16 @@ import { globalOnChainIndexer } from './onChainIndexer';
 const DEMO_TESTNET_MNEMONIC = 'test test test test test test test test test test test junk';
 
 const GUARD_ABI = [
-  'function executeGuarded(address agentWallet, address target, uint256 value, bytes calldata data) external payable returns (bool, bytes memory)',
-  'event GuardedExecution(address indexed agentWallet, address indexed target, uint256 value, bytes data)',
+  'function executeGuarded(address target, uint256 value, bytes calldata data) external payable returns (bytes memory)',
+  'event GuardedExecution(address indexed agentWallet, address indexed target, uint256 value, bool success)',
   'event GuardedExecutionBlocked(address indexed agentWallet, address indexed target, uint256 value, string reason)',
 ];
 
 const REGISTRY_ABI = [
   'function resetCircuitBreaker(address agentWallet) external',
-  'function agents(address) external view returns (address agentWallet, address owner, string name, string aidid, uint8 status, uint256 registeredAt, uint256 lastTripTime, string lastTripReason, uint32 totalTrips)',
+  'function agents(address) external view returns (address agentWallet, address owner, string name, string aidid, uint8 status, uint256 registeredAt, uint256 lastTripTime, string lastTripReason, bytes32 lastTripPayloadHash, uint256 totalActionsEvaluated, uint256 totalBlocks, uint256 totalTrips)',
   'function updatePolicy(address agentWallet, tuple(uint256 maxSpendPerTx, uint256 maxHourlySpend, uint32 maxTxPerMinute, uint32 loopWindowSeconds, uint32 maxIdenticalPayloads, uint16 anomalyThreshold, bool enforceAllowlist)) external',
-  'event CircuitBreakerTripped(address indexed agentWallet, address indexed triggeredBy, string reason, uint256 timestamp)',
+  'event CircuitBreakerTripped(address indexed agentWallet, address indexed triggeredBy, string reason, bytes32 indexed payloadHash, uint256 timestamp)',
   'event CircuitBreakerReset(address indexed agentWallet, address indexed resetBy, uint256 timestamp)',
 ];
 
@@ -81,9 +81,8 @@ export class OnChainClient {
 
     const valueWei = ethers.parseEther(valueEth || '0');
 
-    // Send the guarded execution transaction
+    // Send the guarded execution transaction (3 params: target, value, data)
     const tx = await guardContract.executeGuarded(
-      agentAddress,
       target,
       valueWei,
       data || '0x',
@@ -92,24 +91,35 @@ export class OnChainClient {
 
     const receipt = await tx.wait();
 
-    // Query on-chain agent state post-execution
-    const agentInfo = await registryContract.agents(agentAddress);
-    const statusMap = ['ACTIVE', 'WARNING', 'TRIPPED', 'PAUSED'];
-    const statusStr = statusMap[Number(agentInfo.status)] || 'ACTIVE';
-
     let blockedReason: string | undefined;
     let isBlocked = false;
-    let isTripped = statusStr === 'TRIPPED';
+    let isTripped = false;
+    let statusStr = 'ACTIVE';
 
     for (const log of receipt.logs) {
       try {
-        const parsed = guardContract.interface.parseLog(log);
-        if (parsed?.name === 'GuardedExecutionBlocked') {
+        const parsedGuard = guardContract.interface.parseLog(log);
+        if (parsedGuard?.name === 'GuardedExecutionBlocked') {
           isBlocked = true;
-          blockedReason = parsed.args.reason;
+          blockedReason = parsedGuard.args.reason;
+        }
+      } catch {}
+      try {
+        const parsedReg = registryContract.interface.parseLog(log);
+        if (parsedReg?.name === 'CircuitBreakerTripped') {
+          isTripped = true;
+          statusStr = 'TRIPPED';
+          blockedReason = parsedReg.args.reason;
         }
       } catch {}
     }
+
+    try {
+      const agentInfo = await registryContract.agents(agentAddress);
+      const statusMap = ['ACTIVE', 'WARNING', 'TRIPPED', 'PAUSED'];
+      statusStr = statusMap[Number(agentInfo[4] ?? agentInfo.status)] || statusStr;
+      if (statusStr === 'TRIPPED') isTripped = true;
+    } catch {}
 
     // Trigger indexer to fetch new events right away
     setTimeout(() => {
@@ -120,7 +130,7 @@ export class OnChainClient {
       txHash: tx.hash,
       blockNumber: receipt.blockNumber,
       status: isTripped ? 'TRIP' : isBlocked ? 'BLOCK' : 'ALLOW',
-      reason: blockedReason || (isTripped ? agentInfo.lastTripReason : undefined),
+      reason: blockedReason,
       gasUsed: receipt.gasUsed.toString(),
       circuitTripped: isTripped,
       agentStatusAfter: statusStr,
