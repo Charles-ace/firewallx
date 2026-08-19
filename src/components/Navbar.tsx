@@ -132,11 +132,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Wallet Connect */}
             {account ? (
               <div className="flex items-center justify-end space-x-2 h-9">
-                {!isCorrectNetwork && (
-                  <button onClick={() => switchToBotChain()} className="btn-pill px-3 py-2 text-xs font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition">
-                    Switch to {activeNetworkConfig.chainName}
-                  </button>
-                )}
                 <div className="flex items-center justify-between gap-2 px-3.5 h-9 w-[180px] rounded-full bg-white border border-slate-200 text-xs font-mono shadow-sm">
                   <span className="text-blue-600 font-semibold truncate">{balance} {activeNetworkConfig.nativeCurrency.symbol}</span>
                   <span className="text-slate-300">|</span>
