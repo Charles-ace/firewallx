@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET, NetworkConfig, getNetworkConfig } from '../config/botchain';
+
+export type ActiveNetworkMode = 'testnet' | 'mainnet';
 
 interface WalletContextType {
   account: string | null;
@@ -7,6 +9,9 @@ interface WalletContextType {
   balance: string;
   isConnecting: boolean;
   isCorrectNetwork: boolean;
+  networkMode: ActiveNetworkMode;
+  setNetworkMode: (mode: ActiveNetworkMode) => void;
+  activeNetworkConfig: NetworkConfig;
   connectionError: string | null;
   isWalletModalOpen: boolean;
   setIsWalletModalOpen: (open: boolean) => void;
@@ -14,7 +19,7 @@ interface WalletContextType {
   connectInjected: () => Promise<boolean>;
   connectDemo: () => Promise<void>;
   disconnectWallet: () => void;
-  switchToBotChain: () => Promise<void>;
+  switchToBotChain: (targetChainId?: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -24,6 +29,9 @@ export const WalletContext = createContext<WalletContextType>({
   balance: '0',
   isConnecting: false,
   isCorrectNetwork: false,
+  networkMode: 'testnet',
+  setNetworkMode: () => {},
+  activeNetworkConfig: BOTCHAIN_TESTNET,
   connectionError: null,
   isWalletModalOpen: false,
   setIsWalletModalOpen: () => {},
@@ -51,11 +59,6 @@ interface Eip1193Provider {
 const isValidAddress = (value: unknown): value is string =>
   typeof value === 'string' && /^0x[0-9a-fA-F]{40}$/.test(value);
 
-/**
- * Wallets (notably Rabby) have historically returned accounts from
- * eth_requestAccounts / eth_accounts as a plain string, a single-account
- * object, or { accounts: [...] }. Normalize every shape to a string array.
- */
 const normalizeAccounts = (result: unknown): string[] => {
   if (!result) return [];
   if (isValidAddress(result)) return [result];
@@ -69,10 +72,6 @@ const normalizeAccounts = (result: unknown): string[] => {
   return [];
 };
 
-/**
- * eth_chainId may arrive as "0x3c8", 968, "968", or a bigint depending on
- * the wallet. Normalize to a decimal number (NaN when unparseable).
- */
 const normalizeChainId = (value: unknown): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'bigint') return Number(value);
@@ -83,11 +82,6 @@ const normalizeChainId = (value: unknown): number => {
   return NaN;
 };
 
-/**
- * Some wallets (Rabby popup swallowed, MetaMask SPA edge cases) never
- * resolve the request promise. Never leave the user stuck: surface a clear
- * error instead of hanging silently.
- */
 const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -108,6 +102,23 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number, label: string): Promis
   });
 };
 
+const isRabbyProvider = (p: Eip1193Provider | undefined): boolean => {
+  if (!p) return false;
+  if (p.isRabby) return true;
+  if (Array.isArray(p.providers)) return p.providers.some((sub) => sub.isRabby);
+  return false;
+};
+
+const getInjectedProvider = (): Eip1193Provider | undefined => {
+  if (typeof window === 'undefined') return undefined;
+  const w = window as { ethereum?: Eip1193Provider };
+  if (!w.ethereum) return undefined;
+  if (Array.isArray(w.ethereum.providers)) {
+    return w.ethereum.providers.find((p) => p.isRabby) || w.ethereum.providers.find((p) => p.isMetaMask) || w.ethereum.providers[0];
+  }
+  return w.ethereum;
+};
+
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [account, setAccount] = useState<string | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
@@ -115,86 +126,68 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [isConnecting, setIsConnecting] = useState<boolean>(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState<boolean>(false);
+  const [networkMode, setNetworkModeState] = useState<ActiveNetworkMode>('testnet');
 
-  const isCorrectNetwork = chainId === BOTCHAIN_TESTNET.chainId;
   const accountRef = useRef<string | null>(null);
-  useEffect(() => {
-    accountRef.current = account;
-  }, [account]);
+  accountRef.current = account;
 
-  const getInjectedProvider = (): Eip1193Provider | null => {
-    if (typeof window === 'undefined') return null;
-    const eth = (window as any).ethereum as Eip1193Provider | undefined;
-    if (!eth) return null;
-    if (eth.providers?.length) {
-      // Multiple extensions installed — prefer a known wallet, else first
-      return eth.providers.find((p) => p.isMetaMask || p.isRabby) || eth.providers[0];
+  const activeNetworkConfig = getNetworkConfig(networkMode);
+  const isCorrectNetwork = chainId === activeNetworkConfig.chainId;
+
+  const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
+    setNetworkModeState(mode);
+    // If connected to demo account, switch demo address to match network
+    if (accountRef.current === '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df' || accountRef.current === '0x0760635eE48D744199198d4c0b1Da7D14C1F386b') {
+      const demoAddress = mode === 'mainnet' ? '0x0760635eE48D744199198d4c0b1Da7D14C1F386b' : '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
+      const targetChain = mode === 'mainnet' ? BOTCHAIN_MAINNET.chainId : BOTCHAIN_TESTNET.chainId;
+      setAccount(demoAddress);
+      setChainId(targetChain);
     }
-    return eth;
-  };
-
-  const isRabbyProvider = (eth: Eip1193Provider | null): boolean => {
-    if (!eth) return false;
-    if (eth.isRabby) return true;
-    if (eth.providers?.length) return eth.providers.some((p) => p.isRabby);
-    return false;
-  };
+  }, []);
 
   const fetchRpcBalance = useCallback(async (address: string) => {
     try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 8000);
-      try {
-        const res = await fetch(BOTCHAIN_TESTNET.rpcUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: 1,
-            method: 'eth_getBalance',
-            params: [address, 'latest'],
-          }),
-          signal: controller.signal,
-        });
-        const json = await res.json();
-        if (json.result) {
-          const balInWei = BigInt(json.result);
-          setBalance((Number(balInWei) / 1e18).toFixed(4));
-        }
-      } finally {
-        clearTimeout(timeout);
+      const rpcUrl = activeNetworkConfig.rpcUrl;
+      const res = await fetch(rpcUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        }),
+      });
+      const data = await res.json();
+      if (data.result) {
+        const balWei = BigInt(data.result);
+        const integerPart = (balWei / 10n ** 18n).toString();
+        const remainder = (balWei % 10n ** 18n).toString().padStart(18, '0');
+        const formatted = `${integerPart}.${remainder.substring(0, 4)}`;
+        setBalance(formatted);
       }
-    } catch (err) {
-      console.warn('RPC balance query fallback failed:', err);
-      setBalance('0.0000');
+    } catch (e) {
+      console.warn('Could not fetch RPC balance:', e);
     }
-  }, []);
+  }, [activeNetworkConfig.rpcUrl]);
 
   const updateChainAndBalance = useCallback(async (address: string) => {
     const eth = getInjectedProvider();
     if (eth) {
       try {
-        const chainResult = await withTimeout(
-          eth.request({ method: 'eth_chainId' }),
-          10000,
-          'chain id'
-        );
-        const currentChain = normalizeChainId(chainResult);
-        if (!Number.isNaN(currentChain)) {
-          setChainId(currentChain);
-        }
+        const cIdRaw = await eth.request({ method: 'eth_chainId' });
+        const cId = normalizeChainId(cIdRaw);
+        if (!Number.isNaN(cId)) setChainId(cId);
 
-        // If connected to BOT Chain Testnet or fallback to RPC
-        const balanceHex = await eth.request({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        });
-        const balInWei = BigInt(balanceHex || '0x0');
-        const balInBot = (Number(balInWei) / 1e18).toFixed(4);
-        setBalance(balInBot);
-      } catch (err) {
-        console.error('Error fetching balance from wallet:', err);
-        // Fallback direct RPC query
+        const balRaw = await eth.request({ method: 'eth_getBalance', params: [address, 'latest'] });
+        if (balRaw) {
+          const balWei = BigInt(balRaw);
+          const integerPart = (balWei / 10n ** 18n).toString();
+          const remainder = (balWei % 10n ** 18n).toString().padStart(18, '0');
+          const formatted = `${integerPart}.${remainder.substring(0, 4)}`;
+          setBalance(formatted);
+        }
+      } catch {
         fetchRpcBalance(address);
       }
     } else {
@@ -263,16 +256,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setAccount(address);
       setIsWalletModalOpen(false);
 
-      // Check if network needs switching (never blocks on wallet hang)
       const chainResult = await eth
         .request({ method: 'eth_chainId' })
         .catch(() => null);
       const chain = chainResult === null ? NaN : normalizeChainId(chainResult);
-      if (!Number.isNaN(chain) && chain !== BOTCHAIN_TESTNET.chainId) {
-        await switchToBotChain();
+      if (!Number.isNaN(chain) && chain !== activeNetworkConfig.chainId) {
+        await switchToBotChain(activeNetworkConfig.chainId);
       }
 
-      // Fetch balance in background — never block connection on RPC latency
       updateChainAndBalance(address);
       return true;
     };
@@ -291,7 +282,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           if (accounts.length > 0) {
             return await finalizeConnection(accounts[0]);
           }
-          // Request resolved but no accounts — check for a pre-existing session
           const existing = normalizeAccounts(
             await eth.request({ method: 'eth_accounts' }).catch(() => null)
           );
@@ -301,7 +291,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           lastError = new Error('Wallet returned no accounts.');
           break;
         } catch (err: any) {
-          // Some wallets (older Rabby builds) don't support eth_requestAccounts
           if (err?.code === 4100 || err?.code === -32601 || err?.code === 4200) {
             try {
               await withTimeout(
@@ -324,7 +313,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             break;
           }
 
-          // Explicit user rejection — do not auto-retry
           if (err?.code === 4001) {
             setConnectionError(
               rabby
@@ -335,8 +323,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
 
           lastError = err;
-          // Transient pending/internal errors — retry once before giving up
-          // (timeouts are NOT retried: the wallet popup was never shown)
           if (attempt === 1 && (err?.code === -32002 || err?.code === -32603)) {
             await new Promise((r) => setTimeout(r, 1500));
             continue;
@@ -349,14 +335,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       console.error('Wallet connection error:', err);
       if (err?.code === 'WALLET_TIMEOUT') {
         setConnectionError(err.message);
-      } else if (err?.code === -32002) {
-        setConnectionError('A wallet connection request is already pending. Open your wallet extension and approve it there.');
-      } else if (err?.code === 4001) {
-        setConnectionError(rabby
-          ? 'Rabby did not approve the connection. If no popup appeared, click the Rabby extension icon and try again.'
-          : 'Connection request was declined in your wallet.');
       } else {
-        setConnectionError(err?.message || 'Failed to connect wallet. Please try again.');
+        setConnectionError(err.message || 'Failed to connect wallet.');
       }
       return false;
     } finally {
@@ -367,12 +347,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connectDemo = async () => {
     setConnectionError(null);
     setIsConnecting(true);
-    const demoAddress = '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
+    const demoAddress = networkMode === 'mainnet' ? '0x0760635eE48D744199198d4c0b1Da7D14C1F386b' : '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
+    const targetChain = networkMode === 'mainnet' ? BOTCHAIN_MAINNET.chainId : BOTCHAIN_TESTNET.chainId;
     setAccount(demoAddress);
-    setChainId(BOTCHAIN_TESTNET.chainId);
+    setChainId(targetChain);
     setIsWalletModalOpen(false);
     setIsConnecting(false);
-    // Fetch balance in background — never block connection on RPC latency
     fetchRpcBalance(demoAddress);
   };
 
@@ -387,10 +367,15 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setConnectionError(null);
   };
 
-  const switchToBotChain = async () => {
+  const switchToBotChain = async (targetChainId?: number) => {
     const eth = getInjectedProvider();
     if (!eth) return;
-    const targetChainIdHex = `0x${BOTCHAIN_TESTNET.chainId.toString(16)}`;
+
+    const targetConfig = targetChainId === BOTCHAIN_MAINNET.chainId || (!targetChainId && networkMode === 'mainnet')
+      ? BOTCHAIN_MAINNET
+      : BOTCHAIN_TESTNET;
+
+    const targetChainIdHex = `0x${targetConfig.chainId.toString(16)}`;
 
     try {
       await withTimeout(
@@ -401,7 +386,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         CHAIN_SWITCH_TIMEOUT_MS,
         'network switch'
       );
-      setChainId(BOTCHAIN_TESTNET.chainId);
+      setChainId(targetConfig.chainId);
     } catch (switchError: any) {
       if (switchError.code === 4902 || switchError.data?.originalError?.code === 4902) {
         try {
@@ -411,20 +396,20 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               params: [
                 {
                   chainId: targetChainIdHex,
-                  chainName: BOTCHAIN_TESTNET.chainName,
-                  rpcUrls: [BOTCHAIN_TESTNET.rpcUrl],
-                  nativeCurrency: BOTCHAIN_TESTNET.nativeCurrency,
-                  blockExplorerUrls: BOTCHAIN_TESTNET.blockExplorerUrls,
+                  chainName: targetConfig.chainName,
+                  rpcUrls: [targetConfig.rpcUrl],
+                  nativeCurrency: targetConfig.nativeCurrency,
+                  blockExplorerUrls: targetConfig.blockExplorerUrls,
                 },
               ],
             }),
             CHAIN_SWITCH_TIMEOUT_MS,
             'network add'
           );
-          setChainId(BOTCHAIN_TESTNET.chainId);
+          setChainId(targetConfig.chainId);
         } catch (addError: any) {
           console.error('Failed to add BOT Chain network:', addError);
-          setConnectionError('Failed to add BOT Chain Testnet to wallet: ' + (addError.message || ''));
+          setConnectionError(`Failed to add ${targetConfig.chainName} to wallet: ${addError.message || ''}`);
         }
       } else if (switchError.code !== 'WALLET_TIMEOUT') {
         console.error('Failed to switch network:', switchError);
@@ -443,6 +428,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         balance,
         isConnecting,
         isCorrectNetwork,
+        networkMode,
+        setNetworkMode,
+        activeNetworkConfig,
         connectionError,
         isWalletModalOpen,
         setIsWalletModalOpen,

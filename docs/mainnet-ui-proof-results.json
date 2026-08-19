@@ -1,0 +1,151 @@
+{
+  "testedAt": "2026-08-19T21:56:52.105Z",
+  "network": "BOT Chain Mainnet (Live)",
+  "chainId": 677,
+  "defaultModeOnLoad": "BOT Chain Testnet (On-Chain)",
+  "warningBannerVisible": true,
+  "preset4QuarantinedOffChain": true,
+  "totalOnChainTransactions": 12,
+  "totalGasUsed": "1204630",
+  "totalCostBot": "0.0240926",
+  "finalDeployerBalance": "0.80787046",
+  "presetResults": [
+    {
+      "preset": "1. Normal Payment",
+      "txs": [
+        "0x2417a2a65c815a3f41fb103bfe1ba8a5698eb6ebca3e00c1ba497ccebaa3b564"
+      ]
+    },
+    {
+      "preset": "2. Runaway Loop Attack",
+      "txs": [
+        "0xfcfbef952741fc20f08373b2cc39acc87f1eaaa1f803da33649455a6c2253767",
+        "0x019bf9b99fd2b5d2d270459e2f91d4bbffcb30cbbb31715b42fc34a2e1332b68",
+        "0x55dad76c4e5c8cbc8838b665db3cb11eac555ca6bcab8db5ee9cf79b112247d3"
+      ]
+    },
+    {
+      "preset": "Reset Breaker (Post-Loop)",
+      "txs": [
+        "0xea68b73ccd3643a59ca9b80e9d713c4c508793dfea6abd6cd940eb7e4ba1045a"
+      ]
+    },
+    {
+      "preset": "3. Spend Cap Breach",
+      "txs": [
+        "0x24e0afd4f319a12c1c9fbc4252f3c67a04ed67043d6442b8b32927156597a374"
+      ]
+    },
+    {
+      "preset": "4. High-Entropy Exploit",
+      "txs": []
+    },
+    {
+      "preset": "5. Drainer Phishing Call",
+      "txs": [
+        "0xb44a07ac4db12df66b893fc040fa8e13614319faf2ad8c01c8f3d344a938aeed"
+      ]
+    },
+    {
+      "preset": "6. Velocity Burst Flood",
+      "txs": [
+        "0xbd45c2a5f55f9399147da629858d0b875800c96f8048f6f9a500cc4b10c2dfa6",
+        "0xa22040ac9c0c9a85deb70c86c628dcaaa96ad05cea4b39086ff9d66fb477a338",
+        "0xa17363fb149b68d96be420ec048ff5a43a974747f027358c698988a35e8abaef",
+        "0x0d42fef0a418cf95ec4a7b5840a3c1a09a66ae2387325a8d46fa42e4647bb8c6"
+      ]
+    },
+    {
+      "preset": "Final Reset Breaker (Post-Velocity)",
+      "txs": [
+        "0x70e72dcc7747ed3ca9f6bc593795a17f7c83004e9186aa45d51f8eee4f6f89d4"
+      ]
+    }
+  ],
+  "detailedTxReports": [
+    {
+      "txHash": "0x2417a2a65c815a3f41fb103bfe1ba8a5698eb6ebca3e00c1ba497ccebaa3b564",
+      "blockNumber": 20256838,
+      "status": "SUCCESS (1)",
+      "gasUsed": "133739",
+      "costBot": "0.00267478"
+    },
+    {
+      "txHash": "0xfcfbef952741fc20f08373b2cc39acc87f1eaaa1f803da33649455a6c2253767",
+      "blockNumber": 20256855,
+      "status": "SUCCESS (1)",
+      "gasUsed": "153499",
+      "costBot": "0.00306998"
+    },
+    {
+      "txHash": "0x019bf9b99fd2b5d2d270459e2f91d4bbffcb30cbbb31715b42fc34a2e1332b68",
+      "blockNumber": 20256860,
+      "status": "SUCCESS (1)",
+      "gasUsed": "100075",
+      "costBot": "0.0020015"
+    },
+    {
+      "txHash": "0x55dad76c4e5c8cbc8838b665db3cb11eac555ca6bcab8db5ee9cf79b112247d3",
+      "blockNumber": 20256865,
+      "status": "SUCCESS (1)",
+      "gasUsed": "116093",
+      "costBot": "0.00232186"
+    },
+    {
+      "txHash": "0xea68b73ccd3643a59ca9b80e9d713c4c508793dfea6abd6cd940eb7e4ba1045a",
+      "blockNumber": 20256889,
+      "status": "SUCCESS (1)",
+      "gasUsed": "30479",
+      "costBot": "0.00060958"
+    },
+    {
+      "txHash": "0x24e0afd4f319a12c1c9fbc4252f3c67a04ed67043d6442b8b32927156597a374",
+      "blockNumber": 20256903,
+      "status": "SUCCESS (1)",
+      "gasUsed": "55829",
+      "costBot": "0.00111658"
+    },
+    {
+      "txHash": "0xb44a07ac4db12df66b893fc040fa8e13614319faf2ad8c01c8f3d344a938aeed",
+      "blockNumber": 20256926,
+      "status": "SUCCESS (1)",
+      "gasUsed": "55307",
+      "costBot": "0.00110614"
+    },
+    {
+      "txHash": "0xbd45c2a5f55f9399147da629858d0b875800c96f8048f6f9a500cc4b10c2dfa6",
+      "blockNumber": 20256947,
+      "status": "SUCCESS (1)",
+      "gasUsed": "136891",
+      "costBot": "0.00273782"
+    },
+    {
+      "txHash": "0xa22040ac9c0c9a85deb70c86c628dcaaa96ad05cea4b39086ff9d66fb477a338",
+      "blockNumber": 20256952,
+      "status": "SUCCESS (1)",
+      "gasUsed": "137359",
+      "costBot": "0.00274718"
+    },
+    {
+      "txHash": "0xa17363fb149b68d96be420ec048ff5a43a974747f027358c698988a35e8abaef",
+      "blockNumber": 20256957,
+      "status": "SUCCESS (1)",
+      "gasUsed": "137827",
+      "costBot": "0.00275654"
+    },
+    {
+      "txHash": "0x0d42fef0a418cf95ec4a7b5840a3c1a09a66ae2387325a8d46fa42e4647bb8c6",
+      "blockNumber": 20256962,
+      "status": "SUCCESS (1)",
+      "gasUsed": "117053",
+      "costBot": "0.00234106"
+    },
+    {
+      "txHash": "0x70e72dcc7747ed3ca9f6bc593795a17f7c83004e9186aa45d51f8eee4f6f89d4",
+      "blockNumber": 20256983,
+      "status": "SUCCESS (1)",
+      "gasUsed": "30479",
+      "costBot": "0.00060958"
+    }
+  ]
+}

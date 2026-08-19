@@ -1,9 +1,12 @@
 import { ethers } from 'ethers';
-import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET, NetworkConfig, getNetworkConfig } from '../config/botchain';
 import { globalOnChainIndexer } from './onChainIndexer';
 
-// Testnet Agent Wallet for Interactive UI Demonstrations (Funded on BOT Chain Testnet)
+// Testnet Demo Agent Wallet (Funded on BOT Chain Testnet)
 const DEMO_TESTNET_MNEMONIC = 'test test test test test test test test test test test junk';
+
+// Mainnet Demo Agent Wallet (Funded & Registered on BOT Chain Mainnet)
+const DEMO_MAINNET_KEY = '0xd601e09a7946f52d39f38e29eefeb7fef67d3842dc9946fd25615cef4151b522';
 
 const GUARD_ABI = [
   'function executeGuarded(address target, uint256 value, bytes calldata data) external payable returns (bytes memory)',
@@ -32,19 +35,41 @@ export interface OnChainExecutionResult {
   gasUsed: string;
   circuitTripped: boolean;
   agentStatusAfter?: string;
+  network: 'testnet' | 'mainnet';
 }
 
 export class OnChainClient {
-  private provider: ethers.JsonRpcProvider;
-  private demoSigner: ethers.HDNodeWallet;
+  private network: 'testnet' | 'mainnet' = 'testnet';
+  private testnetProvider: ethers.JsonRpcProvider;
+  private mainnetProvider: ethers.JsonRpcProvider;
+  private testnetDemoSigner: ethers.HDNodeWallet;
+  private mainnetDemoSigner: ethers.Wallet;
 
   constructor() {
-    this.provider = new ethers.JsonRpcProvider(BOTCHAIN_TESTNET.rpcUrl);
-    this.demoSigner = ethers.Wallet.fromPhrase(DEMO_TESTNET_MNEMONIC).connect(this.provider);
+    this.testnetProvider = new ethers.JsonRpcProvider(BOTCHAIN_TESTNET.rpcUrl);
+    this.mainnetProvider = new ethers.JsonRpcProvider(BOTCHAIN_MAINNET.rpcUrl);
+    this.testnetDemoSigner = ethers.Wallet.fromPhrase(DEMO_TESTNET_MNEMONIC).connect(this.testnetProvider);
+    this.mainnetDemoSigner = new ethers.Wallet(DEMO_MAINNET_KEY, this.mainnetProvider);
+  }
+
+  public setNetwork(network: 'testnet' | 'mainnet') {
+    this.network = network;
+  }
+
+  public getNetwork(): 'testnet' | 'mainnet' {
+    return this.network;
+  }
+
+  public getActiveConfig(): NetworkConfig {
+    return getNetworkConfig(this.network);
+  }
+
+  public getActiveProvider(): ethers.JsonRpcProvider {
+    return this.network === 'mainnet' ? this.mainnetProvider : this.testnetProvider;
   }
 
   public getTestAgentAddress(): string {
-    return this.demoSigner.address;
+    return this.network === 'mainnet' ? this.mainnetDemoSigner.address : this.testnetDemoSigner.address;
   }
 
   private async getSigner(userInjected?: boolean): Promise<ethers.Signer> {
@@ -52,11 +77,11 @@ export class OnChainClient {
       const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
       return await browserProvider.getSigner();
     }
-    return this.demoSigner;
+    return this.network === 'mainnet' ? this.mainnetDemoSigner : this.testnetDemoSigner;
   }
 
   /**
-   * Execute Guarded Action on BOT Chain Testnet
+   * Execute Guarded Action on BOT Chain (Testnet or Mainnet)
    */
   public async executeGuardedAction(
     target: string,
@@ -64,19 +89,21 @@ export class OnChainClient {
     data: string,
     useUserWallet = false
   ): Promise<OnChainExecutionResult> {
+    const config = this.getActiveConfig();
+    const provider = this.getActiveProvider();
     const signer = await this.getSigner(useUserWallet);
     const agentAddress = await signer.getAddress();
 
     const guardContract = new ethers.Contract(
-      BOTCHAIN_TESTNET.contracts.guard,
+      config.contracts.guard,
       GUARD_ABI,
       signer
     );
 
     const registryContract = new ethers.Contract(
-      BOTCHAIN_TESTNET.contracts.registry,
+      config.contracts.registry,
       REGISTRY_ABI,
-      this.provider
+      provider
     );
 
     const valueWei = ethers.parseEther(valueEth || '0');
@@ -134,18 +161,20 @@ export class OnChainClient {
       gasUsed: receipt.gasUsed.toString(),
       circuitTripped: isTripped,
       agentStatusAfter: statusStr,
+      network: this.network,
     };
   }
 
   /**
-   * Reset Circuit Breaker on BOT Chain Testnet
+   * Reset Circuit Breaker on BOT Chain (Testnet or Mainnet)
    */
-  public async resetBreakerOnChain(useUserWallet = false): Promise<{ txHash: string; blockNumber: number }> {
+  public async resetBreakerOnChain(useUserWallet = false): Promise<{ txHash: string; blockNumber: number; network: 'testnet' | 'mainnet' }> {
+    const config = this.getActiveConfig();
     const signer = await this.getSigner(useUserWallet);
     const agentAddress = await signer.getAddress();
 
     const registryContract = new ethers.Contract(
-      BOTCHAIN_TESTNET.contracts.registry,
+      config.contracts.registry,
       REGISTRY_ABI,
       signer
     );
@@ -160,6 +189,7 @@ export class OnChainClient {
     return {
       txHash: tx.hash,
       blockNumber: receipt.blockNumber,
+      network: this.network,
     };
   }
 

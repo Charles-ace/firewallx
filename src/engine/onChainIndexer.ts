@@ -1,25 +1,19 @@
-import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET } from '../config/botchain';
 
 // ---------------------------------------------------------------------------
-// On-chain event indexer
+// On-chain event indexer (Multi-Network: Testnet & Mainnet)
 //
-// Source of truth: direct JSON-RPC `eth_getLogs` polling against rpc.bohr.life.
+// Source of truth: direct JSON-RPC `eth_getLogs` polling against rpc.bohr.life & rpc.botchain.ai.
 //   - No API key, no third-party indexing dependency; every event verified
 //     against the chain itself.
-//   - Ranges are polled in bounded chunks (NODE_CHUNK_BLOCKS) because public
-//     nodes cap eth_getLogs range sizes.
-//   - Cursor persisted to localStorage so a reload never re-scans history.
-// Tradeoff vs. scan.bohr.life's HTTP API: the explorer API is indexed (faster
-// for deep history, offset-paginated) but requires an API key and its schema
-// is not publicly documented; direct RPC polling is self-contained and works
-// offline of any explorer. History depth is limited by node retention either
-// way; for this dashboard the recent window is what matters.
+//   - Each indexed event is tagged with its network ('testnet' | 'mainnet').
 // ---------------------------------------------------------------------------
 
 export type ContractName = 'registry' | 'auditor' | 'guard' | 'testTarget';
 
 export interface OnChainEvent {
   id: string;
+  network: 'testnet' | 'mainnet';
   contract: ContractName;
   eventName: string;
   blockNumber: number;
@@ -35,6 +29,7 @@ export interface IndexerStatus {
   lastSyncBlock: number;
   lastSyncAt: number | null;
   error: string | null;
+  mainnetLastSyncBlock?: number;
 }
 
 type ParamSpec = {
@@ -50,20 +45,24 @@ interface EventSpec {
   format: (v: Record<string, string>) => string;
 }
 
-const RPC_URL = BOTCHAIN_TESTNET.rpcUrl;
-const CONTRACTS: Record<ContractName, string> = BOTCHAIN_TESTNET.contracts;
+const TESTNET_RPC = BOTCHAIN_TESTNET.rpcUrl;
+const MAINNET_RPC = BOTCHAIN_MAINNET.rpcUrl;
+
+const TESTNET_CONTRACTS: Record<ContractName, string> = BOTCHAIN_TESTNET.contracts;
+const MAINNET_CONTRACTS: Record<ContractName, string> = BOTCHAIN_MAINNET.contracts;
 
 const POLL_INTERVAL_MS = 20000;
 const NODE_CHUNK_BLOCKS = 2000;
-const INITIAL_BACKFILL_BLOCKS = 3000;
-const MAX_KEPT_EVENTS = 100;
-const CURSOR_KEY = 'firewallx.onchain.cursor';
+const INITIAL_BACKFILL_BLOCKS = 2500;
+const MAX_KEPT_EVENTS = 120;
+const CURSOR_KEY_TESTNET = 'firewallx.onchain.cursor.testnet';
+const CURSOR_KEY_MAINNET = 'firewallx.onchain.cursor.mainnet';
 
 const VERDICT_NAMES = ['ALLOW', 'BLOCK', 'FLAG'];
 const STATUS_NAMES = ['ACTIVE', 'WARNING', 'TRIPPED', 'PAUSED'];
 
 const short = (v: string): string =>
-  v.length > 12 ? `${v.slice(0, 6)}…${v.slice(-4)}` : v;
+  v && v.length > 12 ? `${v.slice(0, 6)}…${v.slice(-4)}` : v || '';
 
 const EVENT_SPECS: Record<ContractName, EventSpec[]> = {
   registry: [
@@ -225,7 +224,7 @@ const EVENT_SPECS: Record<ContractName, EventSpec[]> = {
         { name: 'from', type: 'address', indexed: true },
         { name: 'amount', type: 'uint256', indexed: false },
       ],
-      format: (v) => `received ${(BigInt(v.amount) / 10n ** 18n).toString()} tBOT from ${short(v.from)}`,
+      format: (v) => `received ${(BigInt(v.amount || '0') / 10n ** 18n).toString()} BOT from ${short(v.from)}`,
     },
   ],
 };
@@ -277,12 +276,8 @@ function wordsToString(words: string[], offsetWord: number): { value: string; en
   return { value: new TextDecoder().decode(bytes), endWord: offsetWord + 1 + dataWords };
 }
 
-/**
- * Decode one log from one of our contracts. Returns null if it does not
- * belong to a known event signature.
- */
-export function decodeEvent(contract: ContractName, log: { topics: string[]; data: string }): OnChainEvent | null {
-  const spec = EVENT_SPECS[contract].find((s) => s.topic === log.topics[0]);
+export function decodeEvent(contract: ContractName, log: { topics: string[]; data: string }): Partial<OnChainEvent> | null {
+  const spec = EVENT_SPECS[contract]?.find((s) => s.topic.toLowerCase() === log.topics[0]?.toLowerCase());
   if (!spec) return null;
 
   const values: Record<string, string> = {};
@@ -295,11 +290,12 @@ export function decodeEvent(contract: ContractName, log: { topics: string[]; dat
   for (const p of spec.params) {
     if (p.indexed) {
       const topic = log.topics[topicIdx++];
+      if (!topic) continue;
       if (p.type === 'address') values[p.name] = wordToAddress(topic);
       else if (p.type === 'bytes32') values[p.name] = wordToBytes32(topic);
       else values[p.name] = wordToNumber(topic).toString();
     } else {
-if (p.type === 'string') {
+      if (p.type === 'string') {
         const offsetWordRaw = words[dataWord];
         if (!offsetWordRaw) {
           values[p.name] = '(unparsed)';
@@ -323,12 +319,8 @@ if (p.type === 'string') {
   }
 
   return {
-    id: '',
     contract,
     eventName: spec.name,
-    blockNumber: 0,
-    txHash: '',
-    logIndex: 0,
     summary: spec.format(values),
     details: values,
     indexedAt: Date.now(),
@@ -337,13 +329,12 @@ if (p.type === 'string') {
 
 type Log = { address: string; topics: string[]; data: string; blockNumber: string; transactionHash: string; logIndex: string };
 
-const contractAddresses = Object.values(CONTRACTS).map((a) => a.toLowerCase());
-
 class OnChainIndexer {
   private events: OnChainEvent[] = [];
   private listeners: ((events: OnChainEvent[]) => void)[] = [];
   private statusListeners: ((s: IndexerStatus) => void)[] = [];
-  private cursor: number;
+  private testnetCursor: number = 0;
+  private mainnetCursor: number = 0;
   private timer: number | null = null;
   private inFlight = false;
   private status: IndexerStatus = {
@@ -351,21 +342,27 @@ class OnChainIndexer {
     lastSyncBlock: 0,
     lastSyncAt: null,
     error: null,
+    mainnetLastSyncBlock: 0,
   };
 
   constructor() {
-    const saved = Number(localStorage.getItem(CURSOR_KEY) ?? '0');
-    this.cursor = Number.isFinite(saved) && saved > 0 ? saved : 0;
+    const savedTestnet = Number(localStorage.getItem(CURSOR_KEY_TESTNET) ?? '0');
+    this.testnetCursor = Number.isFinite(savedTestnet) && savedTestnet > 0 ? savedTestnet : 0;
+
+    const savedMainnet = Number(localStorage.getItem(CURSOR_KEY_MAINNET) ?? '0');
+    this.mainnetCursor = Number.isFinite(savedMainnet) && savedMainnet > 0 ? savedMainnet : 0;
+
     try {
-      const stored = JSON.parse(localStorage.getItem('firewallx.onchain.events') ?? '[]') as OnChainEvent[];
+      const stored = JSON.parse(localStorage.getItem('firewallx.onchain.events.v2') ?? '[]') as OnChainEvent[];
       this.events = Array.isArray(stored) ? stored : [];
     } catch {
       this.events = [];
     }
   }
 
-  getEvents(): OnChainEvent[] {
-    return [...this.events];
+  getEvents(network?: 'testnet' | 'mainnet'): OnChainEvent[] {
+    if (!network) return [...this.events];
+    return this.events.filter((e) => e.network === network);
   }
 
   getStatus(): IndexerStatus {
@@ -409,24 +406,10 @@ class OnChainIndexer {
     if (this.inFlight) return;
     this.inFlight = true;
     try {
-      const latest = await this.rpcNumber('eth_blockNumber');
-      if (this.cursor === 0) {
-        this.cursor = Math.max(0, latest - INITIAL_BACKFILL_BLOCKS);
-      }
-      if (this.cursor >= latest) {
-        this.status.lastSyncBlock = latest;
-        this.status.lastSyncAt = Date.now();
-        this.status.error = null;
-        this.emitStatus();
-        return;
-      }
-      for (let from = this.cursor + 1; from <= latest; from += NODE_CHUNK_BLOCKS + 1) {
-        const to = Math.min(from + NODE_CHUNK_BLOCKS, latest);
-        const logs = await this.fetchLogs(from, to);
-        this.ingest(logs);
-        this.cursor = to;
-      }
-      this.status.lastSyncBlock = latest;
+      await Promise.allSettled([
+        this.pollNetwork('testnet', TESTNET_RPC, TESTNET_CONTRACTS),
+        this.pollNetwork('mainnet', MAINNET_RPC, MAINNET_CONTRACTS),
+      ]);
       this.status.lastSyncAt = Date.now();
       this.status.error = null;
       this.emitStatus();
@@ -439,8 +422,47 @@ class OnChainIndexer {
     }
   }
 
-  private async rpcNumber(method: string): Promise<number> {
-    const res = await fetch(RPC_URL, {
+  private async pollNetwork(
+    net: 'testnet' | 'mainnet',
+    rpcUrl: string,
+    contracts: Record<ContractName, string>
+  ): Promise<void> {
+    try {
+      const latest = await this.rpcNumber(rpcUrl, 'eth_blockNumber');
+      const contractAddrs = Object.values(contracts).map((a) => a.toLowerCase());
+
+      let cursor = net === 'mainnet' ? this.mainnetCursor : this.testnetCursor;
+      if (cursor === 0) {
+        cursor = Math.max(0, latest - INITIAL_BACKFILL_BLOCKS);
+      }
+
+      if (cursor >= latest) {
+        if (net === 'mainnet') this.status.mainnetLastSyncBlock = latest;
+        else this.status.lastSyncBlock = latest;
+        return;
+      }
+
+      for (let from = cursor + 1; from <= latest; from += NODE_CHUNK_BLOCKS + 1) {
+        const to = Math.min(from + NODE_CHUNK_BLOCKS, latest);
+        const logs = await this.fetchLogs(rpcUrl, contractAddrs, from, to);
+        this.ingest(net, contracts, logs);
+        cursor = to;
+      }
+
+      if (net === 'mainnet') {
+        this.mainnetCursor = latest;
+        this.status.mainnetLastSyncBlock = latest;
+      } else {
+        this.testnetCursor = latest;
+        this.status.lastSyncBlock = latest;
+      }
+    } catch (err) {
+      console.warn(`[OnChainIndexer] Poll error on ${net}:`, err);
+    }
+  }
+
+  private async rpcNumber(rpcUrl: string, method: string): Promise<number> {
+    const res = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params: [] }),
@@ -449,8 +471,8 @@ class OnChainIndexer {
     return parseInt(json.result, 16);
   }
 
-  private async fetchLogs(fromBlock: number, toBlock: number): Promise<Log[]> {
-    const res = await fetch(RPC_URL, {
+  private async fetchLogs(rpcUrl: string, contractAddresses: string[], fromBlock: number, toBlock: number): Promise<Log[]> {
+    const res = await fetch(rpcUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -471,17 +493,19 @@ class OnChainIndexer {
     return (json.result ?? []) as Log[];
   }
 
-  private ingest(logs: Log[]): void {
+  private ingest(net: 'testnet' | 'mainnet', contracts: Record<ContractName, string>, logs: Log[]): void {
+    let newEvents = false;
     for (const log of logs) {
-      const contract = (Object.keys(CONTRACTS) as ContractName[]).find(
-        (k) => CONTRACTS[k].toLowerCase() === log.address.toLowerCase()
+      const contract = (Object.keys(contracts) as ContractName[]).find(
+        (k) => contracts[k].toLowerCase() === log.address.toLowerCase()
       );
       if (!contract) continue;
       const decoded = decodeEvent(contract, log);
       if (!decoded) continue;
       const event: OnChainEvent = {
-        ...decoded,
-        id: `${log.transactionHash}-${parseInt(log.logIndex, 16)}`,
+        ...(decoded as any),
+        id: `${net}-${log.transactionHash}-${parseInt(log.logIndex, 16)}`,
+        network: net,
         blockNumber: parseInt(log.blockNumber, 16),
         txHash: log.transactionHash,
         logIndex: parseInt(log.logIndex, 16),
@@ -490,8 +514,9 @@ class OnChainIndexer {
       const existing = this.events.find((e) => e.id === event.id);
       if (existing) continue;
       this.events = [event, ...this.events].slice(0, MAX_KEPT_EVENTS);
+      newEvents = true;
     }
-    if (logs.length > 0) {
+    if (newEvents) {
       this.emitEvents();
       this.persist();
     }
@@ -507,11 +532,10 @@ class OnChainIndexer {
 
   private persist(): void {
     try {
-      localStorage.setItem(CURSOR_KEY, String(this.cursor));
-      localStorage.setItem('firewallx.onchain.events', JSON.stringify(this.events.slice(0, 50)));
-    } catch {
-      // storage may be unavailable; indexing still works in-memory
-    }
+      localStorage.setItem(CURSOR_KEY_TESTNET, String(this.testnetCursor));
+      localStorage.setItem(CURSOR_KEY_MAINNET, String(this.mainnetCursor));
+      localStorage.setItem('firewallx.onchain.events.v2', JSON.stringify(this.events.slice(0, 60)));
+    } catch {}
   }
 }
 

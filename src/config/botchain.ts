@@ -17,6 +17,8 @@ export interface NetworkConfig {
   };
 }
 
+export type NetworkMode = 'testnet' | 'mainnet' | 'sandbox';
+
 export const BOTCHAIN_TESTNET: NetworkConfig = {
   chainId: 968,
   chainName: 'BOT Chain Testnet',
@@ -53,5 +55,9 @@ export const BOTCHAIN_MAINNET: NetworkConfig = {
     testTarget: '0x92078F723b8E557EF011C40e1c4413445574C158',
   },
 };
+
+export function getNetworkConfig(mode: 'testnet' | 'mainnet'): NetworkConfig {
+  return mode === 'mainnet' ? BOTCHAIN_MAINNET : BOTCHAIN_TESTNET;
+}
 
 export const CURRENT_NETWORK = BOTCHAIN_TESTNET;

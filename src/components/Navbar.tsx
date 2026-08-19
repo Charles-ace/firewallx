@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSDKModal,
   trippedCount,
 }) => {
-  const { account, balance, isCorrectNetwork, connectWallet, disconnectWallet, switchToBotChain } = useWallet();
+  const { account, balance, isCorrectNetwork, networkMode, activeNetworkConfig, connectWallet, disconnectWallet, switchToBotChain } = useWallet();
 
   const renderChip = (tab: TabItem) => {
     if (tab.key === 'policy' && trippedCount > 0) {
@@ -48,17 +48,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Brand */}
-<div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('home')}>
-              <img
-                src="/logo.svg"
-                alt="FirewallX"
-                className="w-9 h-9 transition-transform duration-200 group-hover:scale-105 group-hover:-rotate-3"
-                draggable={false}
-              />
-              <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
-                FirewallX
-              </span>
-            </div>
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('home')}>
+            <img
+              src="/logo.svg"
+              alt="FirewallX"
+              className="w-9 h-9 transition-transform duration-200 group-hover:scale-105 group-hover:-rotate-3"
+              draggable={false}
+            />
+            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent">
+              FirewallX
+            </span>
+          </div>
 
           {/* Navigation Tabs — flat 2D underline style */}
           <nav className="hidden md:flex items-center -mb-px">
@@ -94,22 +94,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Network Badge */}
             <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-mono shadow-sm">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${networkMode === 'mainnet' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${networkMode === 'mainnet' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
               </span>
-              <span className="text-slate-500 text-[11px]">BOT Testnet</span>
+              <span className="text-slate-700 text-[11px] font-bold">
+                {networkMode === 'mainnet' ? 'BOT Mainnet 677' : 'BOT Testnet 968'}
+              </span>
             </div>
 
-            {/* Wallet Connect — fixed min-width so the header never shifts on connect */}
+            {/* Wallet Connect */}
             {account ? (
               <div className="flex items-center justify-end space-x-2 h-9">
                 {!isCorrectNetwork && (
-                  <button onClick={switchToBotChain} className="btn-pill px-3 py-2 text-xs font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition">
-                    Switch to BOT Testnet
+                  <button onClick={() => switchToBotChain()} className="btn-pill px-3 py-2 text-xs font-medium rounded-full bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition">
+                    Switch to {activeNetworkConfig.chainName}
                   </button>
                 )}
-                <div className="flex items-center justify-between gap-2 px-3.5 h-9 w-[170px] rounded-full bg-white border border-slate-200 text-xs font-mono shadow-sm">
-                  <span className="text-blue-600 font-semibold truncate">{balance} tBOT</span>
+                <div className="flex items-center justify-between gap-2 px-3.5 h-9 w-[180px] rounded-full bg-white border border-slate-200 text-xs font-mono shadow-sm">
+                  <span className="text-blue-600 font-semibold truncate">{balance} {activeNetworkConfig.nativeCurrency.symbol}</span>
                   <span className="text-slate-300">|</span>
                   <span className="text-slate-600 truncate" title={account}>
                     {account.substring(0, 6)}...{account.substring(account.length - 4)}

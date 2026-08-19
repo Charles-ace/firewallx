@@ -4,7 +4,6 @@ import {
   Sparkles, RefreshCw, Layers, ArrowRight, Network 
 } from 'lucide-react';
 import { useWallet } from '../context/useWallet';
-import { BOTCHAIN_TESTNET } from '../config/botchain';
 
 export const WalletModal: React.FC = () => {
   const { 
@@ -17,6 +16,8 @@ export const WalletModal: React.FC = () => {
     clearError,
     switchToBotChain,
     isCorrectNetwork,
+    networkMode,
+    activeNetworkConfig,
     account,
     chainId
   } = useWallet();
@@ -59,7 +60,9 @@ export const WalletModal: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900">Connect to FirewallX</h3>
-              <p className="text-[11px] text-slate-400 font-mono">BOT Chain Testnet</p>
+              <p className="text-[11px] text-slate-400 font-mono">
+                {activeNetworkConfig.chainName} ({activeNetworkConfig.chainId})
+              </p>
             </div>
           </div>
           <button
@@ -99,14 +102,6 @@ export const WalletModal: React.FC = () => {
             >
               <div className="flex items-center space-x-3.5">
                 <div className="w-10 h-10 rounded-xl bg-orange-50 ring-1 ring-orange-100 flex items-center justify-center shrink-0">
-                  <img
-                    src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg"
-                    alt="MetaMask"
-                    className="w-6 h-6"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
                   <Wallet className="w-5 h-5 text-orange-600" />
                 </div>
                 <div>
@@ -123,7 +118,7 @@ export const WalletModal: React.FC = () => {
                         <span>Waiting for approval — check your wallet popup...</span>
                       </span>
                     ) : hasInjected ? (
-                      `${detectedWallet} detected — a popup will open for approval`
+                      `${detectedWallet} detected — auto switches to ${activeNetworkConfig.chainName}`
                     ) : 'Auto-prompts extension or fallback'}
                   </div>
                 </div>
@@ -151,7 +146,7 @@ export const WalletModal: React.FC = () => {
                   <div className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 flex items-center space-x-1.5">
                     <span>Demo Sentinel Wallet</span>
                     <span className="chip bg-emerald-100 text-emerald-800 border-emerald-300 !text-[9px] font-bold">
-                      RECOMMENDED
+                      {networkMode === 'mainnet' ? 'MAINNET READY' : 'RECOMMENDED'}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-500">
@@ -161,7 +156,7 @@ export const WalletModal: React.FC = () => {
                         <span>Connecting...</span>
                       </span>
                     ) : (
-                      'Pre-funded testnet balance · No extension required'
+                      `Pre-configured ${networkMode} agent wallet · No extension required`
                     )}
                   </div>
                 </div>
@@ -170,22 +165,25 @@ export const WalletModal: React.FC = () => {
             </button>
           </div>
 
-          {/* BOT Chain Testnet Network Guide */}
+          {/* BOT Chain Network Info Guide */}
           <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
             <div className="flex items-center justify-between text-slate-600 font-medium">
               <span className="flex items-center space-x-1.5">
                 <Network className="w-3.5 h-3.5 text-blue-600" />
-                <span>BOT Chain Testnet RPC</span>
+                <span>{activeNetworkConfig.chainName} RPC</span>
+              </span>
+              <span className="text-[10px] font-mono bg-slate-200 px-1.5 py-0.5 rounded text-slate-700">
+                Chain ID {activeNetworkConfig.chainId}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-slate-500">
               <div>
                 <span className="text-slate-400 block">RPC Endpoint</span>
-                <span className="text-slate-700 truncate block">{BOTCHAIN_TESTNET.rpcUrl}</span>
+                <span className="text-slate-700 truncate block">{activeNetworkConfig.rpcUrl}</span>
               </div>
               <div>
                 <span className="text-slate-400 block">Symbol</span>
-                <span className="text-slate-700 block">tBOT (18 decimals)</span>
+                <span className="text-slate-700 block">{activeNetworkConfig.nativeCurrency.symbol} (18 decimals)</span>
               </div>
             </div>
           </div>
@@ -193,14 +191,14 @@ export const WalletModal: React.FC = () => {
 
         {/* Footer */}
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-400">
-          <span>Need testnet tBOT?</span>
+          <span>{networkMode === 'mainnet' ? 'BOT Chain Mainnet' : 'Need testnet tBOT?'}</span>
           <a
-            href={BOTCHAIN_TESTNET.faucetUrl || 'https://faucet.botchain.ai/basic'}
+            href={activeNetworkConfig.blockExplorerUrls[0]}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:underline flex items-center space-x-1"
           >
-            <span>Open Faucet</span>
+            <span>Block Explorer</span>
             <ExternalLink className="w-3 h-3" />
           </a>
         </div>

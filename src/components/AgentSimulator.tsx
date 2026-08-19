@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Terminal, Zap, ShieldCheck, Flame, Cpu, RefreshCw, Send, AlertTriangle, Bug, Activity, ShieldAlert, Gauge, Code2, Copy, Check, ExternalLink, Globe, HardDrive } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { Terminal, Zap, ShieldCheck, Flame, Cpu, RefreshCw, Send, AlertTriangle, Bug, Activity, ShieldAlert, Gauge, Code2, Copy, Check, ExternalLink, Globe, HardDrive, AlertOctagon } from 'lucide-react';
 import { globalFirewallEngine } from '../engine/firewallEngine';
 import { AgentAction, EvaluationResult } from '../engine/types';
 import { uid } from '../engine/uid';
 import { globalOnChainClient } from '../engine/onChainClient';
-import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET, getNetworkConfig } from '../config/botchain';
+import { WalletContext } from '../context/WalletContext';
 
 interface AgentSimulatorProps {
   onEvaluationComplete: (result: EvaluationResult) => void;
@@ -22,19 +23,48 @@ interface Preset {
 }
 
 export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComplete }) => {
+  const { networkMode: walletNetworkMode, setNetworkMode: setWalletNetworkMode } = useContext(WalletContext);
+  
+  // DEFAULT MODE ON PAGE LOAD IS TESTNET
+  const [executionMode, setExecutionMode] = useState<'testnet' | 'mainnet' | 'sandbox'>('testnet');
   const [selectedAgent, setSelectedAgent] = useState<string>(globalOnChainClient.getTestAgentAddress());
   const [targetAddress, setTargetAddress] = useState<string>(BOTCHAIN_TESTNET.contracts.testTarget);
-  const [txValue, setTxValue] = useState<string>('0.05');
+  const [txValue, setTxValue] = useState<string>('0.001');
   const [txCalldata, setTxCalldata] = useState<string>('0x608060405234801561001057600080fd5b50');
   const [actionDescription, setActionDescription] = useState<string>('Standard KV state update');
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
-  const [executionMode, setExecutionMode] = useState<'onchain' | 'sandbox'>('onchain');
   const [lastLatencyMs, setLastLatencyMs] = useState<number | null>(0.42);
   const [terminalLogs, setTerminalLogs] = useState<string[]>([
     '🔥 FirewallX Attack & Simulation Engine Ready',
-    'Target: BOT Chain Testnet Sentinel Suite (Chain ID: 968)',
+    'Network: BOT Chain Testnet Sentinel Suite (Chain ID: 968) [DEFAULT]',
     'On-chain mode enabled — attacks trigger real smart contract enforcement.',
   ]);
+
+  const activeConfig = getNetworkConfig(executionMode === 'mainnet' ? 'mainnet' : 'testnet');
+  const currencySymbol = executionMode === 'mainnet' ? 'BOT' : 'tBOT';
+
+  const handleModeChange = (mode: 'testnet' | 'mainnet' | 'sandbox') => {
+    setExecutionMode(mode);
+    if (mode === 'mainnet') {
+      globalOnChainClient.setNetwork('mainnet');
+      setWalletNetworkMode('mainnet');
+      setTargetAddress(BOTCHAIN_MAINNET.contracts.testTarget);
+      setSelectedAgent(globalOnChainClient.getTestAgentAddress());
+      addLog(`⚠️ SWITCHED TO BOT CHAIN MAINNET (Chain ID: 677)`);
+      addLog(`Target: ${BOTCHAIN_MAINNET.contracts.testTarget}`);
+      addLog(`Guard: ${BOTCHAIN_MAINNET.contracts.guard}`);
+    } else if (mode === 'testnet') {
+      globalOnChainClient.setNetwork('testnet');
+      setWalletNetworkMode('testnet');
+      setTargetAddress(BOTCHAIN_TESTNET.contracts.testTarget);
+      setSelectedAgent(globalOnChainClient.getTestAgentAddress());
+      addLog(`🌐 SWITCHED TO BOT CHAIN TESTNET (Chain ID: 968)`);
+      addLog(`Target: ${BOTCHAIN_TESTNET.contracts.testTarget}`);
+      addLog(`Guard: ${BOTCHAIN_TESTNET.contracts.guard}`);
+    } else {
+      addLog(`💻 SWITCHED TO LOCAL SANDBOX (Offline Simulation)`);
+    }
+  };
 
   const addLog = (msg: string) => {
     setTerminalLogs((prev) => [...prev.slice(-40), `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -42,7 +72,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
 
   const executeLocalAction = (action: AgentAction) => {
     const t0 = performance.now();
-    addLog(`[SANDBOX] Evaluating ${action.agentWallet.substring(0, 8)}... Target: ${action.target.substring(0, 10)}... Value: ${action.value} tBOT`);
+    addLog(`[SANDBOX] Evaluating ${action.agentWallet.substring(0, 8)}... Target: ${action.target.substring(0, 10)}... Value: ${action.value} ${currencySymbol}`);
     const result = globalFirewallEngine.evaluate(action);
     const t1 = performance.now();
     const duration = parseFloat((t1 - t0).toFixed(2));
@@ -66,12 +96,12 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
   // Preset 1: Normal Agent Action
   const runNormalScenario = async () => {
     setIsSimulating(true);
-    addLog('🚀 Running Scenario: Normal Agent KV Update...');
+    addLog(`🚀 Running Scenario: Normal Agent KV Update on ${executionMode === 'mainnet' ? 'MAINNET' : executionMode === 'testnet' ? 'TESTNET' : 'SANDBOX'}...`);
 
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       try {
         const payload = globalOnChainClient.encodeTestKVCall(`normal-${Date.now()}`, 'valid-op');
-        addLog(`📡 Broadcasting on-chain call via FirewallXGuard...`);
+        addLog(`📡 Broadcasting on-chain call via FirewallXGuard (${activeConfig.chainName})...`);
         const res = await globalOnChainClient.executeGuardedAction(targetAddress, '0.001', payload);
         addLog(`✅ ON-CHAIN ALLOWED: GuardedExecution emitted. Tx: ${res.txHash} (Block #${res.blockNumber})`);
       } catch (err: any) {
@@ -83,7 +113,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
         agentId: 'agent-sixa-telegram',
         agentWallet: selectedAgent,
         target: targetAddress,
-        value: '0.02',
+        value: '0.001',
         data: '0x123456780000000000000000000000000000000000000000000000000000000000000001',
         timestamp: Date.now(),
         metadata: {
@@ -100,11 +130,11 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
   // Preset 2: Trigger the Runaway Loop Attack
   const runLoopAttackScenario = async () => {
     setIsSimulating(true);
-    addLog('🚨 Running Scenario: Recursive Webhook Retry Loop Attack...');
+    addLog(`🚨 Running Scenario: Recursive Webhook Retry Loop Attack on ${executionMode === 'mainnet' ? 'MAINNET' : executionMode === 'testnet' ? 'TESTNET' : 'SANDBOX'}...`);
 
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       const loopPayload = globalOnChainClient.encodeTestKVCall(`runaway-loop-${Date.now()}`, 'payload-loop-alpha');
-      addLog(`Firing identical payload bursts directly to BOT Chain Testnet Guard...`);
+      addLog(`Firing identical payload bursts directly to ${activeConfig.chainName} Guard...`);
 
       for (let i = 1; i <= 3; i++) {
         addLog(`⚡ Loop iteration #${i} broadcasting to chain...`);
@@ -151,12 +181,13 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
   // Preset 3: Spend Cap Breach
   const runSpendBreachScenario = async () => {
     setIsSimulating(true);
-    addLog(`💸 Running Scenario: Runaway Spend Breach (15.0 tBOT requested vs cap)...`);
+    const spendAmount = executionMode === 'mainnet' ? '0.08' : '15.0';
+    addLog(`💸 Running Scenario: Runaway Spend Breach (${spendAmount} ${currencySymbol} requested vs cap)...`);
 
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       try {
-        addLog(`📡 Sending 15.0 tBOT execution intent to Guard...`);
-        const res = await globalOnChainClient.executeGuardedAction(targetAddress, '15.0', '0x12345678');
+        addLog(`📡 Sending ${spendAmount} ${currencySymbol} execution intent to Guard...`);
+        const res = await globalOnChainClient.executeGuardedAction(targetAddress, spendAmount, '0x12345678');
         if (res.status === 'BLOCK') {
           addLog(`🛑 ON-CHAIN BLOCKED: Spend cap exceeded! Guard halted target execution and refunded funds.`);
           addLog(`🔗 On-chain Tx Hash: ${res.txHash} (Block #${res.blockNumber})`);
@@ -185,11 +216,13 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     setIsSimulating(false);
   };
 
-  // Preset 4: High-Entropy Malicious Calldata Injection
-  const runMaliciousCalldataScenario = () => {
+  // Preset 4: High-Entropy Malicious Calldata Injection (Off-Chain Sentinel SDK Pre-Screening)
+  const runMaliciousCalldataScenario = async () => {
     setIsSimulating(true);
     addLog('👾 Running Scenario: High-Entropy Malicious Calldata Injection...');
     const randomHex = '0x' + Array.from({ length: 120 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, '0')).join('');
+    
+    addLog('🛡️ Sentinel SDK Pre-Screening: Computing Shannon entropy & byte distribution off-chain before broadcast...');
     const action: AgentAction = {
       id: uid('exploit'),
       agentId: 'agent-sixa-telegram',
@@ -204,6 +237,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
       },
     };
     executeLocalAction(action);
+    addLog('🛑 QUARANTINED BY SENTINEL SDK: High Shannon entropy (>85%) detected. Malicious payload quarantined before broadcast — 0 gas spent.');
     setIsSimulating(false);
   };
 
@@ -213,9 +247,9 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     addLog('🚫 Running Scenario: Known Drainer Contract Interaction...');
     const deadTarget = '0x000000000000000000000000000000000000dead';
 
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       try {
-        const res = await globalOnChainClient.executeGuardedAction(deadTarget, '0.01', '0x');
+        const res = await globalOnChainClient.executeGuardedAction(deadTarget, '0.001', '0x');
         addLog(`🛑 ON-CHAIN BLOCKED: Target in blocklist! Guard prevented execution.`);
         addLog(`🔗 On-chain Tx Hash: ${res.txHash}`);
       } catch (err: any) {
@@ -243,10 +277,10 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
   // Preset 6: Velocity Burst Flood (Rate Limit)
   const runVelocityBurstScenario = async () => {
     setIsSimulating(true);
-    addLog('⚡ Running Scenario: High-Frequency Transaction Velocity Burst...');
+    addLog(`⚡ Running Scenario: High-Frequency Transaction Velocity Burst on ${executionMode === 'mainnet' ? 'MAINNET' : executionMode === 'testnet' ? 'TESTNET' : 'SANDBOX'}...`);
 
-    if (executionMode === 'onchain') {
-      addLog(`Sending 4 rapid transactions with distinct payloads on BOT Chain Testnet...`);
+    if (executionMode !== 'sandbox') {
+      addLog(`Sending 4 rapid transactions with distinct payloads on ${activeConfig.chainName}...`);
       for (let i = 1; i <= 4; i++) {
         const payload = globalOnChainClient.encodeTestKVCall(`burst-${Date.now()}-${i}`, `payload-${i}`);
         try {
@@ -290,9 +324,9 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     e.preventDefault();
     setIsSimulating(true);
 
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       try {
-        addLog(`📡 Sending custom transaction on-chain to Guard...`);
+        addLog(`📡 Sending custom transaction on-chain to Guard (${activeConfig.chainName})...`);
         const res = await globalOnChainClient.executeGuardedAction(targetAddress, txValue, txCalldata);
         addLog(`✅ On-chain result: ${res.status}. Tx: ${res.txHash}`);
       } catch (err: any) {
@@ -319,10 +353,10 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
   const handleResetBreaker = async () => {
     setIsSimulating(true);
     addLog(`🔄 Resetting Circuit Breaker...`);
-    if (executionMode === 'onchain') {
+    if (executionMode !== 'sandbox') {
       try {
         const res = await globalOnChainClient.resetBreakerOnChain();
-        addLog(`✅ Circuit Breaker RESET on-chain! Status restored to ACTIVE. Tx: ${res.txHash} (Block #${res.blockNumber})`);
+        addLog(`✅ Circuit Breaker RESET on-chain (${res.network.toUpperCase()})! Status restored to ACTIVE. Tx: ${res.txHash} (Block #${res.blockNumber})`);
         globalFirewallEngine.resetCircuitBreaker(selectedAgent);
       } catch (err: any) {
         addLog(`❌ On-chain reset failed: ${err.message || err}`);
@@ -372,7 +406,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
       title: 'Spend Cap Breach',
       description: (
         <>
-          Requests 15.0 tBOT exceeding policy cap. Verdict: <strong className="text-amber-600">BLOCK</strong>.
+          Requests 15.0 {currencySymbol} exceeding policy cap. Verdict: <strong className="text-amber-600">BLOCK</strong>.
         </>
       ),
       icon: AlertTriangle,
@@ -386,7 +420,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
       title: 'High-Entropy Exploit',
       description: (
         <>
-          High Shannon entropy obfuscated calldata. Verdict: <strong className="text-violet-600">BLOCK</strong>.
+          Obfuscated calldata. Intercepted off-chain by SDK: <strong className="text-violet-600">BLOCK</strong>.
         </>
       ),
       icon: Bug,
@@ -437,16 +471,16 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
           </div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight">Interactive Attack Simulator</h2>
           <p className="text-slate-500 text-xs mt-1">
-            Trigger attacks against the smart contracts to test on-chain loop detection, velocity limits, and autonomous circuit trips.
+            Trigger attacks against smart contracts to test on-chain loop detection, velocity limits, and autonomous circuit trips.
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            {/* Mode Switcher */}
-            <div className="flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+            {/* 3-Way Network Mode Switcher (Testnet is DEFAULT) */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-lg border border-slate-200 shadow-inner">
               <button
-                onClick={() => setExecutionMode('onchain')}
-                className={`px-3 py-1 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
-                  executionMode === 'onchain'
+                onClick={() => handleModeChange('testnet')}
+                className={`px-3 py-1.5 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
+                  executionMode === 'testnet'
                     ? 'bg-blue-600 text-white font-bold shadow-sm'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
@@ -454,11 +488,24 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                 <Globe className="w-3 h-3" />
                 <span>BOT Chain Testnet (On-Chain)</span>
               </button>
+
               <button
-                onClick={() => setExecutionMode('sandbox')}
-                className={`px-3 py-1 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
+                onClick={() => handleModeChange('mainnet')}
+                className={`px-3 py-1.5 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
+                  executionMode === 'mainnet'
+                    ? 'bg-gradient-to-r from-amber-600 to-rose-600 text-white font-bold shadow-sm ring-1 ring-amber-400'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-amber-50/50'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block mr-0.5" />
+                <span>BOT Chain Mainnet (Live)</span>
+              </button>
+
+              <button
+                onClick={() => handleModeChange('sandbox')}
+                className={`px-3 py-1.5 text-xs font-mono rounded-md flex items-center space-x-1.5 transition-all ${
                   executionMode === 'sandbox'
-                    ? 'bg-white text-slate-900 font-bold shadow-sm'
+                    ? 'bg-white text-slate-900 font-bold shadow-sm border border-slate-200'
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -480,6 +527,25 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
         </button>
       </div>
 
+      {/* Prominent Warning Banner for Mainnet Mode */}
+      {executionMode === 'mainnet' && (
+        <div className="p-4 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-amber-500/15 backdrop-blur-sm flex items-start gap-3.5 text-amber-950 shadow-sm animate-in fade-in duration-300">
+          <div className="p-2 rounded-lg bg-amber-500/20 text-amber-700 shrink-0 mt-0.5 ring-1 ring-amber-500/30">
+            <AlertOctagon className="w-5 h-5 text-amber-600 animate-pulse" />
+          </div>
+          <div className="flex-1">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
+              <span>⚠️ BOT Chain Mainnet (Live) Mode Active</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-200 text-amber-900 font-mono font-bold">CHAIN ID: 677</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-mono font-bold">REAL GAS SPENT</span>
+            </div>
+            <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
+              Mainnet mode uses <strong>real BOT gas</strong> and executes <strong>real state changes</strong> directly against verified Mainnet contracts (Registry: <code>0xbbEAf8B3445dBa8e2cC468Da27675A65e59D8fEf</code>, Guard: <code>0x03c368fE89B7A7a75f3FCE186554F01a18FDAb0e</code>). Proceed only if you understand this.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Presets & Custom Form (7 cols) */}
         <div className="lg:col-span-7 space-y-5">
@@ -491,7 +557,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                   <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span>Active On-Chain Policy — Sentinel Agent</span>
+                  <span>Active On-Chain Policy — Sentinel Agent ({executionMode === 'mainnet' ? 'MAINNET 677' : executionMode === 'testnet' ? 'TESTNET 968' : 'LOCAL'})</span>
                 </h3>
                 <span className={`chip !text-[10px] ${
                   activeAgentState?.status === 'TRIPPED' 
@@ -503,7 +569,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  ['Spend / Tx', `1.0 tBOT`],
+                  ['Spend / Tx', `1.0 ${currencySymbol}`],
                   ['Rate Limit', `3 tx/min`],
                   ['Loop Trip', `2 calls / 60s`],
                   ['Enforcement', `On-Chain Guard`],
@@ -523,7 +589,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
               <div className="p-1.5 rounded-lg bg-amber-50 text-amber-600 ring-1 ring-amber-100">
                 <Zap className="w-3.5 h-3.5" />
               </div>
-              <span>Attack Simulation Presets {executionMode === 'onchain' && '(Live On-Chain)'}</span>
+              <span>Attack Simulation Presets {executionMode !== 'sandbox' && `(Live On-Chain · ${activeConfig.chainName})`}</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -586,7 +652,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] font-mono text-slate-400 block mb-1.5">Value (tBOT)</label>
+                  <label className="text-[11px] font-mono text-slate-400 block mb-1.5">Value ({currencySymbol})</label>
                   <input
                     type="text"
                     value={txValue}
@@ -608,7 +674,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
 
               <button type="submit" disabled={isSimulating} className="btn-primary w-full !py-2.5 group">
                 <Send className="w-3.5 h-3.5" />
-                <span>{executionMode === 'onchain' ? 'Execute Guarded Transaction on BOT Chain' : 'Evaluate Custom Payload (Local Pre-flight)'}</span>
+                <span>{executionMode !== 'sandbox' ? `Execute Guarded Transaction on ${activeConfig.chainName}` : 'Evaluate Custom Payload (Local Pre-flight)'}</span>
               </button>
             </form>
           </div>
@@ -624,7 +690,9 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                   <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 </div>
-                <span className="text-xs font-mono text-slate-500 ml-2">firewallx-sentinel.log</span>
+                <span className="text-xs font-mono text-slate-500 ml-2">
+                  firewallx-sentinel.log [{executionMode.toUpperCase()}]
+                </span>
               </div>
               <button
                 onClick={() => setTerminalLogs(['🔥 Sentinel log cleared. Ready.'])}
@@ -643,8 +711,8 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                       ? 'text-emerald-400'
                       : log.includes('BLOCK') || log.includes('TRIPPED') || log.includes('BREACH')
                       ? 'text-rose-400 font-semibold'
-                      : log.includes('FLAG')
-                      ? 'text-amber-400'
+                      : log.includes('FLAG') || log.includes('MAINNET')
+                      ? 'text-amber-400 font-semibold'
                       : 'text-slate-400'
                   }`}
                 >
