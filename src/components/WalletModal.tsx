@@ -61,7 +61,7 @@ export const WalletModal: React.FC = () => {
             <div>
               <h3 className="text-sm font-bold text-slate-900">Connect to FirewallX</h3>
               <p className="text-[11px] text-slate-400 font-mono">
-                {activeNetworkConfig.chainName} ({activeNetworkConfig.chainId})
+                {activeNetworkConfig.chainName}
               </p>
             </div>
           </div>

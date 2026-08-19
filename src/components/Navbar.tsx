@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenSDKModal,
   trippedCount,
 }) => {
-  const { account, balance, isCorrectNetwork, networkMode, activeNetworkConfig, connectWallet, disconnectWallet, switchToBotChain } = useWallet();
+  const { account, balance, isCorrectNetwork, networkMode, setNetworkMode, activeNetworkConfig, connectWallet, disconnectWallet, switchToBotChain } = useWallet();
 
   const renderChip = (tab: TabItem) => {
     if (tab.key === 'policy' && trippedCount > 0) {
@@ -91,15 +91,42 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>SDK</span>
             </button>
 
-            {/* Network Badge */}
-            <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-xs font-mono shadow-sm">
-              <span className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-60 ${networkMode === 'mainnet' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${networkMode === 'mainnet' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-              </span>
-              <span className="text-slate-700 text-[11px] font-bold">
-                {networkMode === 'mainnet' ? 'BOT Mainnet 677' : 'BOT Testnet 968'}
-              </span>
+            {/* Mainnet / Testnet Interactive Toggle */}
+            <div className="flex items-center p-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
+              <button
+                type="button"
+                onClick={() => {
+                  setNetworkMode('testnet');
+                  if (account && !account.startsWith('0x9965') && !account.startsWith('0x0760')) {
+                    switchToBotChain(968);
+                  }
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 flex items-center space-x-1.5 ${
+                  networkMode === 'testnet'
+                    ? 'bg-white text-slate-900 font-bold shadow-sm border border-slate-200/80'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${networkMode === 'testnet' ? 'bg-emerald-500' : 'bg-slate-400'} inline-block`} />
+                <span>Testnet</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setNetworkMode('mainnet');
+                  if (account && !account.startsWith('0x9965') && !account.startsWith('0x0760')) {
+                    switchToBotChain(677);
+                  }
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 flex items-center space-x-1.5 ${
+                  networkMode === 'mainnet'
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${networkMode === 'mainnet' ? 'bg-white' : 'bg-amber-400'} inline-block`} />
+                <span>Mainnet</span>
+              </button>
             </div>
 
             {/* Wallet Connect */}

@@ -536,7 +536,6 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
           <div className="flex-1">
             <div className="text-xs font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
               <span>⚠️ BOT Chain Mainnet (Live) Mode Active</span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-200 text-amber-900 font-mono font-bold">CHAIN ID: 677</span>
               <span className="px-2 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-mono font-bold">REAL GAS SPENT</span>
             </div>
             <p className="text-xs text-amber-900/90 mt-1 leading-relaxed">
@@ -557,7 +556,7 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
                   <div className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
                     <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span>Active On-Chain Policy — Sentinel Agent ({executionMode === 'mainnet' ? 'MAINNET 677' : executionMode === 'testnet' ? 'TESTNET 968' : 'LOCAL'})</span>
+                  <span>Active On-Chain Policy — Sentinel Agent ({executionMode === 'mainnet' ? 'MAINNET' : executionMode === 'testnet' ? 'TESTNET' : 'LOCAL'})</span>
                 </h3>
                 <span className={`chip !text-[10px] ${
                   activeAgentState?.status === 'TRIPPED' 

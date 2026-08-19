@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET, NetworkConfig, getNetworkConfig } from '../config/botchain';
+import { globalOnChainClient } from '../engine/onChainClient';
 
 export type ActiveNetworkMode = 'testnet' | 'mainnet';
 
@@ -136,6 +137,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
     setNetworkModeState(mode);
+    globalOnChainClient.setNetwork(mode);
     // If connected to demo account, switch demo address to match network
     if (accountRef.current === '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df' || accountRef.current === '0x0760635eE48D744199198d4c0b1Da7D14C1F386b') {
       const demoAddress = mode === 'mainnet' ? '0x0760635eE48D744199198d4c0b1Da7D14C1F386b' : '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
