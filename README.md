@@ -10,7 +10,8 @@ AI Agent Action Firewall for BOT Chain — an on-chain smart-contract sentinel s
 
 - **Live Application**: [https://firewall-x.vercel.app](https://firewall-x.vercel.app)
 - **GitHub Repository**: [https://github.com/Charles-ace/firewallx](https://github.com/Charles-ace/firewallx)
-- **Target Network**: BOT Chain Testnet (Chain ID: `968`, RPC: `https://rpc.bohr.life`, Explorer: `https://scan.bohr.life`)
+- **Target Network (interactive demo)**: BOT Chain Testnet (Chain ID: `968`, RPC: `https://rpc.bohr.life`, Explorer: `https://scan.bohr.life`) — free, safe, already proven.
+- **Mainnet Deployment (eligibility proof)**: BOT Chain Mainnet (Chain ID: `677`, RPC: `https://rpc.botchain.ai`, Explorer: `https://scan.botchain.ai`) — same verified bytecode, deployed; the demo itself stays on testnet so judges can interact without spending real value.
 
 ---
 
@@ -46,6 +47,19 @@ The deployed `FirewallXGuard` and `FirewallXRegistry` smart contracts directly g
 | `FirewallXAuditor` (v3) | `0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A` | Verified (4,428 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0x3F9f55ff8c3C5090b8321E9ecB8B6c02a13a055A) |
 | `FirewallXGuard` (v3) | `0xa9c078278a1164838Ab449e6019A779242605758` | Verified (1,227 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0xa9c078278a1164838Ab449e6019A779242605758) |
 | `TestTargetContract` | `0x35810D68685f11a792438E2Fd237A10313015228` | Verified (1,570 bytes) | [scan.bohr.life](https://scan.bohr.life/address/0x35810D68685f11a792438E2Fd237A10313015228) |
+
+## 2b. Deployed Contract Addresses (BOT Chain Mainnet, Chain ID: 677)
+
+Same bytecode as the testnet deployment above (byte-for-byte, sha256-verified; `FirewallXGuard` differs only in the embedded immutable registry/auditor addresses). Deployed with the 1 BOT gas grant.
+
+| Contract | Address | Deployment Tx (Explorer Link) |
+|---|---|---|
+| `FirewallXRegistry` | `0xbbEAf8B3445dBa8e2cC468Da27675A65e59D8fEf` | [0x9da1bab4…908f90](https://scan.botchain.ai/tx/0x9da1bab4e92b2aad0834cc9571e7092b5ff519205abb5dfe60de66e20d908f90) |
+| `FirewallXAuditor` | `0x8ff7236490Cf597ABD9a8233138EcFe195Df474D` | [0x960d7bce…8dcab](https://scan.botchain.ai/tx/0x960d7bceee09e09ab3fa34034dce05182f3833d23c0eaa0e68705ae8b4e8dcab) |
+| `FirewallXGuard` | `0x03c368fE89B7A7a75f3FCE186554F01a18FDAb0e` | [0x02636880…86ad9](https://scan.botchain.ai/tx/0x02636880239efe383d3da41a094df86ca0599a8955ad4b63a2bc197862186ad9) |
+| `TestTargetContract` | `0x92078F723b8E557EF011C40e1c4413445574C158` | [0x22c28d92…901ef](https://scan.botchain.ai/tx/0x22c28d92e35452940ada1dfab9011ccac019fa894e1a099c201da8c39a1901ef) |
+
+Deployer: `0x0760635eE48D744199198d4c0b1Da7D14C1F386b` · All four txs `status: 0x1` (success) · Blocks `20,194,704`–`20,194,716` · Gas used `3,915,862` (0.078353080 BOT total at 20 Gwei). No test transactions were executed against mainnet — deployment only.
 
 ---
 
@@ -115,9 +129,15 @@ curl -X POST https://rpc.bohr.life \
 
 ---
 
-## 5. Roadmap
+## 5. Eligibility Checklist
+
+- [x] **Deployed to BOT Chain Mainnet** (Chain ID `677`) — `FirewallXRegistry`, `FirewallXAuditor`, `FirewallXGuard`, `TestTargetContract` all live at [section 2b](#2b-deployed-contract-addresses-bot-chain-mainnet-chain-id-677) with raw explorer links. Deployed from the grant-funded wallet `0x0760635eE48D744199198d4c0b1Da7D14C1F386b` (1 BOT grant verified on-chain before deployment).
+- [x] Same verified code as testnet — byte-for-byte sha256 match, see [section 2](#2-deployed-contract-addresses-bot-chain-testnet-chain-id-968).
+- [x] Mainnet gas usage minimized to deployment only (`0.078353080 BOT` total) — no test transactions triggered against mainnet.
+
+## 6. Roadmap
 
 - [x] **v1.0 (Current)**: On-chain Guard gatekeeper, stateful Registry with rolling velocity & loop buffers, autonomous circuit breaker trip/reset, immutable Auditor telemetry, and interactive web sandbox on BOT Chain Testnet.
-- [ ] **v1.1 (Mainnet Deployment)**: Deploy verified contracts to BOT Chain Mainnet (Chain ID `677`) following grant approval.
+- [x] **v1.1 (Mainnet Deployment)**: Deployed the verified contracts to BOT Chain Mainnet (Chain ID `677`) using the 1 BOT gas grant — see [section 2b](#2b-deployed-contract-addresses-bot-chain-mainnet-chain-id-677). The interactive demo remains on testnet; mainnet serves as the eligibility proof.
 - [ ] **v1.2 (ZK / TEE Oracle Coprocessor)**: Move statistical 6-signal anomaly scoring into a trust-minimized zero-knowledge coprocessor or TEE enclave for cryptographic on-chain verification.
 - [ ] **v1.3 (Agent Framework Integrations)**: Pre-built middleware wrappers for LangChain, ElizaOS, and AutoGPT.
