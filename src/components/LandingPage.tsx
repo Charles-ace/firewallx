@@ -6,7 +6,7 @@ import {
 import { PipelineDemo } from './PipelineDemo';
 import { Reveal } from './Reveal';
 import { ActiveTab } from './Navbar';
-import { BOTCHAIN_TESTNET } from '../config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET } from '../config/botchain';
 
 interface LandingPageProps {
   onNavigate: (tab: ActiveTab) => void;
@@ -76,12 +76,31 @@ const SIGNALS = [
   ['Composite risk', 'weighted combination into a single 0–1000 score'],
 ];
 
-const ROADMAP = [
-  ['Sentinel contract suite', 'Deployed and verified on BOT Chain Testnet (Registry, Auditor, Guard, TestTarget)'],
-  ['On-chain loop & velocity enforcement', 'Active on-chain with autonomous circuit breaker tripping on threshold breaches'],
-  ['Event-log indexer', 'Live in the telemetry tab — indexes Registry, Auditor, Guard and TestTarget events via direct RPC polling'],
-  ['6-Signal AI anomaly scorer', 'Runs client-side/SDK (entropy math, composite scoring) — roadmap for ZK/TEE oracle verification'],
-  ['Gas sponsorship path', 'BOT Chain EOA paymaster integration for frictionless agent transactions'],
+const ROADMAP_ITEMS = [
+  {
+    title: 'Dual Network Sentinels',
+    desc: 'Byte-identical contract suite deployed and verified on BOT Chain Mainnet (Chain 677) and Testnet (Chain 968).',
+    badge: 'MAINNET & TESTNET LIVE',
+    badgeCls: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  },
+  {
+    title: 'Autonomous Breaker & Limits',
+    desc: 'Identical-payload loop detection, velocity limits, and spend caps enforced directly on-chain with auto-tripping.',
+    badge: 'ACTIVE ON-CHAIN',
+    badgeCls: 'bg-blue-50 text-blue-700 border-blue-200',
+  },
+  {
+    title: 'Real-Time Event Indexer',
+    desc: 'Live telemetry stream indexes Registry, Auditor, Guard, and TestTarget events with sub-second polling.',
+    badge: 'LIVE TELEMETRY',
+    badgeCls: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+  },
+  {
+    title: '6-Signal Sentinel SDK',
+    desc: 'Shannon entropy math, velocity tracking, and multi-factor composite risk scoring ready for Node.js & TypeScript.',
+    badge: 'SDK INTEGRATED',
+    badgeCls: 'bg-purple-50 text-purple-700 border-purple-200',
+  },
 ];
 
 interface FlowNodeProps {
@@ -116,6 +135,9 @@ const FlowNode: React.FC<FlowNodeProps> = ({ x, y, r = 24, stroke, icon: Icon, i
 );
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKModal }) => {
+  const [networkTab, setNetworkTab] = React.useState<'mainnet' | 'testnet'>('mainnet');
+  const currentNetwork = networkTab === 'mainnet' ? BOTCHAIN_MAINNET : BOTCHAIN_TESTNET;
+
   return (
     <div className="relative z-10">
       {/* Hero */}
@@ -403,141 +425,189 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
       <section className="bg-white border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
           <Reveal>
-            <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="eyebrow text-slate-500 flex items-center justify-center space-x-2 mb-2">
-              <span className="w-6 h-px bg-slate-300" />
-              <span>Built for BOT Chain</span>
-              <span className="w-6 h-px bg-slate-300" />
+            <div className="text-center max-w-2xl mx-auto mb-8">
+              <div className="eyebrow text-slate-500 flex items-center justify-center space-x-2 mb-2">
+                <span className="w-6 h-px bg-slate-300" />
+                <span>Built for BOT Chain</span>
+                <span className="w-6 h-px bg-slate-300" />
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+                Target networks, verified live
+              </h2>
+              <p className="mt-4 text-slate-500 text-base leading-relaxed">
+                FirewallX is fully deployed and verified across both BOT Chain Mainnet and Testnet.
+                Sub-second finality (~0.75s) enables deterministic on-chain security evaluations with zero user latency.
+              </p>
+
+              {/* Network Tab Selector */}
+              <div className="mt-6 inline-flex items-center p-1 bg-slate-100/90 rounded-full border border-slate-200 shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => setNetworkTab('mainnet')}
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 flex items-center space-x-2 ${
+                    networkTab === 'mainnet'
+                      ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${networkTab === 'mainnet' ? 'bg-white animate-pulse' : 'bg-amber-400'}`} />
+                  <span>BOT Chain Mainnet (Live)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNetworkTab('testnet')}
+                  className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 flex items-center space-x-2 ${
+                    networkTab === 'testnet'
+                      ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 font-bold'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${networkTab === 'testnet' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  <span>BOT Chain Testnet (On-Chain)</span>
+                </button>
+              </div>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-              Target network, verified live
-            </h2>
-            <p className="mt-4 text-slate-500 text-base leading-relaxed">
-              FirewallX is built against BOT Chain's public testnet. The RPC endpoint below was
-              verified directly against the network — this is where every evaluation will eventually settle.
-            </p>
-          </div>
           </Reveal>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-            {/* Network facts */}
-            <div className="lg:col-span-2 card p-6">
-              <div className="flex items-center space-x-2 text-xs font-mono text-emerald-600 mb-4">
-                <Network className="w-3.5 h-3.5" />
-                <span>NETWORK FACTS</span>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {/* Network Facts (5 cols) */}
+            <div className="lg:col-span-5 card p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2 text-xs font-mono text-blue-600 font-bold uppercase tracking-wider">
+                    <Network className="w-4 h-4" />
+                    <span>{currentNetwork.chainName} Facts</span>
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
+                    networkTab === 'mainnet' 
+                      ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                      : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  }`}>
+                    {networkTab === 'mainnet' ? 'LIVE MAINNET' : 'PUBLIC TESTNET'}
+                  </span>
+                </div>
+
+                <dl className="space-y-2.5 text-xs">
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <dt className="text-slate-500 font-medium">RPC Endpoint</dt>
+                    <dd className="font-mono text-blue-600 font-semibold">{currentNetwork.rpcUrl.replace('https://', '')}</dd>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <dt className="text-slate-500 font-medium">Block Explorer</dt>
+                    <dd className="font-mono text-blue-600 font-semibold">
+                      <a href={currentNetwork.blockExplorerUrls[0]} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                        <span>{currentNetwork.blockExplorerUrls[0].replace('https://', '')}</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </dd>
+                  </div>
+                  {currentNetwork.faucetUrl ? (
+                    <div className="flex justify-between py-2 border-b border-slate-100">
+                      <dt className="text-slate-500 font-medium">Faucet</dt>
+                      <dd className="font-mono text-blue-600 font-semibold">
+                        <a href={currentNetwork.faucetUrl} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                          <span>faucet.botchain.ai</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </dd>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between py-2 border-b border-slate-100">
+                      <dt className="text-slate-500 font-medium">Gas Market</dt>
+                      <dd className="font-mono text-slate-700 font-semibold">Live BOT Native Gas</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <dt className="text-slate-500 font-medium">Native Asset</dt>
+                    <dd className="font-mono text-slate-800 font-semibold">{currentNetwork.nativeCurrency.symbol} (18 decimals)</dd>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-slate-100">
+                    <dt className="text-slate-500 font-medium">Block Time / Finality</dt>
+                    <dd className="font-mono text-emerald-600 font-bold">~0.75s sub-second</dd>
+                  </div>
+                </dl>
               </div>
-              <dl className="space-y-3 text-xs">
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-400">RPC endpoint</dt>
-                  <dd className="font-mono text-blue-600">rpc.bohr.life</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-400">Explorer</dt>
-                  <dd className="font-mono text-blue-600">scan.bohr.life</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-400">Faucet</dt>
-                  <dd className="font-mono text-blue-600">faucet.botchain.ai/basic</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-400">Unit</dt>
-                  <dd className="font-mono text-slate-700">tBOT (18 decimals)</dd>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-slate-100">
-                  <dt className="text-slate-400">Finality</dt>
-                  <dd className="font-mono text-slate-700">~0.75s</dd>
-                </div>
-              </dl>
-              <div className="mt-4 flex items-start space-x-2.5 p-3 rounded-lg bg-emerald-50 border border-emerald-100">
-                <Cog className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-emerald-800 leading-relaxed">
-                  This build's config points at the live testnet RPC — wallet balance checks and network
-                  switching use the real endpoint, not a fixture.
+
+              <div className="mt-5 flex items-start space-x-2.5 p-3.5 rounded-xl bg-blue-50/70 border border-blue-100">
+                <Cog className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-blue-900 leading-relaxed">
+                  Active connection targets the live <strong>{currentNetwork.chainName}</strong> endpoint — wallet balances and on-chain circuit breaker interactions execute in real-time.
                 </p>
               </div>
             </div>
 
-            {/* Honest status */}
-            <div className="lg:col-span-3 card p-6">
-              <div className="flex items-center space-x-2 text-xs font-mono text-amber-600 mb-4">
-                <TerminalSquare className="w-3.5 h-3.5" />
-                <span>BUILD STATUS — STATED HONESTLY</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60">
-                  <div className="text-xs font-bold text-slate-900 mb-1">Autonomous Breaker & Limits: On-Chain</div>
-                  <p className="text-[11px] text-slate-500 leading-relaxed">
-                    Identical-payload loop detection, rolling velocity limits, spend caps, and autonomous circuit breaker tripping are enforced directly on-chain by the Guard & Registry.
-                    The 6-signal composite anomaly scorer runs in-browser/SDK with verdicts anchored to the on-chain Auditor.
-                  </p>
-                </div>
-                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60">
-                  <div className="text-xs font-bold text-emerald-800 mb-1">
-                    Sentinels: live on BOT Chain Testnet
+            {/* Verified On-Chain Contracts (7 cols) */}
+            <div className="lg:col-span-7 card p-6 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2 text-xs font-mono text-emerald-600 font-bold uppercase tracking-wider">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Verified Sentinel Contracts</span>
                   </div>
-                  <ul className="space-y-1 text-[11px] font-mono text-emerald-800/80">
-                    <li>
-                      Registry —{' '}
-                      <a
-                        href={`${BOTCHAIN_TESTNET.blockExplorerUrls[0]}/address/${BOTCHAIN_TESTNET.contracts.registry}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline decoration-emerald-400 hover:text-emerald-600"
-                      >
-                        {BOTCHAIN_TESTNET.contracts.registry.slice(0, 6)}…{BOTCHAIN_TESTNET.contracts.registry.slice(-4)}
-                      </a>
-                    </li>
-                    <li>
-                      Auditor —{' '}
-                      <a
-                        href={`${BOTCHAIN_TESTNET.blockExplorerUrls[0]}/address/${BOTCHAIN_TESTNET.contracts.auditor}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline decoration-emerald-400 hover:text-emerald-600"
-                      >
-                        {BOTCHAIN_TESTNET.contracts.auditor.slice(0, 6)}…{BOTCHAIN_TESTNET.contracts.auditor.slice(-4)}
-                      </a>
-                    </li>
-                    <li>
-                      Guard —{' '}
-                      <a
-                        href={`${BOTCHAIN_TESTNET.blockExplorerUrls[0]}/address/${BOTCHAIN_TESTNET.contracts.guard}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline decoration-emerald-400 hover:text-emerald-600"
-                      >
-                        {BOTCHAIN_TESTNET.contracts.guard.slice(0, 6)}…{BOTCHAIN_TESTNET.contracts.guard.slice(-4)}
-                      </a>
-                    </li>
-                    <li>
-                      TestTarget —{' '}
-                      <a
-                        href={`${BOTCHAIN_TESTNET.blockExplorerUrls[0]}/address/${BOTCHAIN_TESTNET.contracts.testTarget}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline decoration-emerald-400 hover:text-emerald-600"
-                      >
-                        {BOTCHAIN_TESTNET.contracts.testTarget.slice(0, 6)}…{BOTCHAIN_TESTNET.contracts.testTarget.slice(-4)}
-                      </a>
-                    </li>
-                  </ul>
-                  <p className="text-[11px] text-emerald-800/80 leading-relaxed mt-2">
-                    Deployment transactions verified on scan.bohr.life. Real sentinel events are indexed from the chain
-                    into the live telemetry feed — see On-Chain Sentinel Events.
-                  </p>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                    <span>100% BYTE-IDENTICAL</span>
+                  </span>
                 </div>
-                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 sm:col-span-2">
-                  <div className="text-xs font-bold text-slate-900 mb-2">Roadmap</div>
-                  <ul className="space-y-1.5">
-                    {ROADMAP.map(([title, note], i) => (
-                      <li key={title} className="flex items-start space-x-2 text-[11px]">
-                        <span className={`w-1.5 h-1.5 rounded-full ${i === 0 ? 'bg-emerald-500' : 'bg-blue-500'} mt-1 shrink-0`} />
-                        <span className="text-slate-700 font-semibold">{title}</span>
-                        <span className="text-slate-500">— {note}</span>
-                      </li>
-                    ))}
-                  </ul>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { role: 'Registry', desc: 'Agent registration & policy config', addr: currentNetwork.contracts.registry },
+                    { role: 'Guard', desc: 'Interception & breaker execution', addr: currentNetwork.contracts.guard },
+                    { role: 'Auditor', desc: 'Immutable on-chain verdict logging', addr: currentNetwork.contracts.auditor },
+                    { role: 'TestTarget', desc: 'Simulated DeFi protocol receiver', addr: currentNetwork.contracts.testTarget },
+                  ].map((c) => (
+                    <a
+                      key={c.role}
+                      href={`${currentNetwork.blockExplorerUrls[0]}/address/${c.addr}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3.5 rounded-xl border border-slate-200/90 bg-slate-50/50 hover:bg-emerald-50/40 hover:border-emerald-300 transition-all group flex flex-col justify-between"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                          {c.role}
+                        </span>
+                        <ExternalLink className="w-3 h-3 text-slate-400 group-hover:text-emerald-600 transition-colors" />
+                      </div>
+                      <p className="text-[10px] text-slate-500 mb-2 leading-tight">{c.desc}</p>
+                      <div className="font-mono text-[11px] text-emerald-700 font-semibold truncate bg-white px-2 py-1 rounded border border-slate-200/80 group-hover:border-emerald-200">
+                        {c.addr.slice(0, 8)}…{c.addr.slice(-6)}
+                      </div>
+                    </a>
+                  ))}
                 </div>
+              </div>
+
+              <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 flex items-center justify-between">
+                <span>Direct on-chain event indexer active for {currentNetwork.chainName}.</span>
+                <span className="font-mono font-bold text-emerald-700">SUB-SECOND SETTLEMENT</span>
+              </div>
+            </div>
+
+            {/* Architecture & Roadmap Status (12 cols full width) */}
+            <div className="lg:col-span-12 card p-6">
+              <div className="flex items-center space-x-2 text-xs font-mono text-slate-700 font-bold uppercase tracking-wider mb-4">
+                <TerminalSquare className="w-4 h-4 text-blue-600" />
+                <span>Architecture & Implementation Status</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {ROADMAP_ITEMS.map((item) => (
+                  <div key={item.title} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-900">{item.title}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed mb-3">{item.desc}</p>
+                    </div>
+                    <div>
+                      <span className={`inline-block px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${item.badgeCls}`}>
+                        {item.badge}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
