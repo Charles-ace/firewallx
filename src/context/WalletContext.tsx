@@ -243,6 +243,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [updateChainAndBalance]);
 
+  // Immediately refresh balance when switching between Testnet and Mainnet
+  useEffect(() => {
+    if (account) {
+      updateChainAndBalance(account);
+    }
+  }, [networkMode, account, updateChainAndBalance]);
+
   const connectInjected = async (): Promise<boolean> => {
     setConnectionError(null);
     const eth = getInjectedProvider();
