@@ -1,4 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <path d="M32 3.5C32 3.5 8 12.2 8 23.2V40.5C8 53 32 61.5 32 61.5C32 61.5 56 53 56 40.5V23.2C56 12.2 32 3.5 32 3.5Z" fill="#3B82F6"/>
-  <path d="M22.5 32L29.5 39L42 23.5" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <defs>
+    <linearGradient id="favShield" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#3B82F6"/>
+      <stop offset="50%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="favCore" x1="16" y1="16" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="50%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Outer Protective Shield with Electric Edge -->
+  <path d="M32 4L8 14.5V32C8 46 18.5 56.5 32 60C45.5 56.5 56 46 56 32V14.5L32 4Z" 
+        fill="url(#favShield)" 
+        stroke="#60A5FA" 
+        stroke-width="2"/>
+
+  <!-- High-Contrast Bold "X" Nexus Core -->
+  <path d="M19 19L27.5 30.5L18 45H25L32 35.5L39 45H46L36.5 30.5L45 19H38L32 27L26 19H19Z" 
+        fill="url(#favCore)"/>
+
+  <!-- Central Pulse Breaker Glow -->
+  <polygon points="32,26 37,32 32,38 27,32" fill="#FFFFFF"/>
 </svg>
