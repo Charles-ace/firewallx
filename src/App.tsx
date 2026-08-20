@@ -12,7 +12,7 @@ import { LandingPage } from './components/LandingPage';
 import { globalFirewallEngine } from './engine/firewallEngine';
 import { EvaluationResult } from './engine/types';
 import { Zap, ExternalLink, Shield, ArrowRight } from 'lucide-react';
-import { BOTCHAIN_TESTNET } from './config/botchain';
+import { useWallet } from './context/useWallet';
 
 interface HeroContent {
   pill?: string;
@@ -138,6 +138,7 @@ const CursorGlow: React.FC = () => {
 };
 
 export const App: React.FC = () => {
+  const { activeNetworkConfig, networkMode } = useWallet();
   const [activeTab, setActiveTab] = useState<ActiveTab>('home');
   const [isSDKModalOpen, setIsSDKModalOpen] = useState<boolean>(false);
   const [evaluations, setEvaluations] = useState<EvaluationResult[]>([]);
@@ -398,11 +399,14 @@ export const App: React.FC = () => {
           <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
             <span>© 2026 FirewallX — AI Agent Action Firewall for BOT Chain.</span>
             <div className="flex items-center space-x-4 font-mono">
-              <span>BOT Chain Testnet</span>
+              <span className="flex items-center space-x-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${networkMode === 'mainnet' ? 'bg-amber-400' : 'bg-emerald-400'} inline-block`} />
+                <span>{activeNetworkConfig.chainName} ({activeNetworkConfig.chainId})</span>
+              </span>
               <span>•</span>
               <span>EVM Compatible</span>
               <span>•</span>
-              <span className="text-blue-400">Local evaluation engine</span>
+              <span className="text-blue-400">On-Chain Sentinel Active</span>
             </div>
           </div>
         </div>

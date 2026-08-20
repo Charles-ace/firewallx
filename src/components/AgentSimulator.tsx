@@ -66,6 +66,25 @@ export const AgentSimulator: React.FC<AgentSimulatorProps> = ({ onEvaluationComp
     }
   };
 
+  // Sync executionMode when walletNetworkMode changes from Navbar
+  useEffect(() => {
+    if (walletNetworkMode === 'mainnet' && executionMode !== 'mainnet') {
+      setExecutionMode('mainnet');
+      setTargetAddress(BOTCHAIN_MAINNET.contracts.testTarget);
+      setSelectedAgent(globalOnChainClient.getTestAgentAddress());
+      addLog(`⚠️ SWITCHED TO BOT CHAIN MAINNET (Chain ID: 677)`);
+      addLog(`Target: ${BOTCHAIN_MAINNET.contracts.testTarget}`);
+      addLog(`Guard: ${BOTCHAIN_MAINNET.contracts.guard}`);
+    } else if (walletNetworkMode === 'testnet' && executionMode !== 'testnet' && executionMode !== 'sandbox') {
+      setExecutionMode('testnet');
+      setTargetAddress(BOTCHAIN_TESTNET.contracts.testTarget);
+      setSelectedAgent(globalOnChainClient.getTestAgentAddress());
+      addLog(`🌐 SWITCHED TO BOT CHAIN TESTNET (Chain ID: 968)`);
+      addLog(`Target: ${BOTCHAIN_TESTNET.contracts.testTarget}`);
+      addLog(`Guard: ${BOTCHAIN_TESTNET.contracts.guard}`);
+    }
+  }, [walletNetworkMode]);
+
   const addLog = (msg: string) => {
     setTerminalLogs((prev) => [...prev.slice(-40), `[${new Date().toLocaleTimeString()}] ${msg}`]);
   };

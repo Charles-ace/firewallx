@@ -135,21 +135,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const activeNetworkConfig = getNetworkConfig(networkMode);
   const isCorrectNetwork = chainId === activeNetworkConfig.chainId;
 
-  const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
-    setNetworkModeState(mode);
-    globalOnChainClient.setNetwork(mode);
-    // If connected to demo account, switch demo address to match network
-    if (accountRef.current === '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df' || accountRef.current === '0x0760635eE48D744199198d4c0b1Da7D14C1F386b') {
-      const demoAddress = mode === 'mainnet' ? '0x0760635eE48D744199198d4c0b1Da7D14C1F386b' : '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
-      const targetChain = mode === 'mainnet' ? BOTCHAIN_MAINNET.chainId : BOTCHAIN_TESTNET.chainId;
-      setAccount(demoAddress);
-      setChainId(targetChain);
-    }
-  }, []);
+  const isDemoAccount = (addr: string | null) =>
+    addr?.toLowerCase() === '0x9965507d1a55bcc2695c58ba16fb37d819b0a4df' ||
+    addr?.toLowerCase() === '0x0760635ee48d744199198d4c0b1da7d14c1f386b';
 
-  const fetchRpcBalance = useCallback(async (address: string) => {
+  const fetchRpcBalance = useCallback(async (address: string, customRpcUrl?: string) => {
     try {
-      const rpcUrl = activeNetworkConfig.rpcUrl;
+      const rpcUrl = customRpcUrl || activeNetworkConfig.rpcUrl;
       const res = await fetch(rpcUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -174,6 +166,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [activeNetworkConfig.rpcUrl]);
 
   const updateChainAndBalance = useCallback(async (address: string) => {
+    if (isDemoAccount(address)) {
+      fetchRpcBalance(address);
+      return;
+    }
+
     const eth = getInjectedProvider();
     if (eth) {
       try {
@@ -194,6 +191,21 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     } else {
       fetchRpcBalance(address);
+    }
+  }, [fetchRpcBalance]);
+
+  const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
+    setNetworkModeState(mode);
+    globalOnChainClient.setNetwork(mode);
+    const targetConfig = getNetworkConfig(mode);
+    // If connected to demo account, switch demo address to match network
+    if (isDemoAccount(accountRef.current)) {
+      const demoAddress = mode === 'mainnet' ? '0x0760635eE48D744199198d4c0b1Da7D14C1F386b' : '0x9965507D1a55bcC2695C58ba16FB37d819B0A4df';
+      setAccount(demoAddress);
+      setChainId(targetConfig.chainId);
+      fetchRpcBalance(demoAddress, targetConfig.rpcUrl);
+    } else if (accountRef.current) {
+      fetchRpcBalance(accountRef.current, targetConfig.rpcUrl);
     }
   }, [fetchRpcBalance]);
 
@@ -455,3 +467,5 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     </WalletContext.Provider>
   );
 };
+
+export { useWallet } from './useWallet';
