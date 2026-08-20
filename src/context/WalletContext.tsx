@@ -195,66 +195,104 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [fetchRpcBalance]);
 
-  const switchToBotChain = useCallback(async (targetChainId?: number) => {
-    const eth = getInjectedProvider();
-    if (!eth) return;
+  const switchToBotChain = useCallback(
+    async (targetChainId?: number) => {
+      const eth = getInjectedProvider();
+      if (!eth) return;
 
-    const targetConfig =
-      targetChainId === BOTCHAIN_MAINNET.chainId || (!targetChainId && networkMode === 'mainnet')
-        ? BOTCHAIN_MAINNET
-        : BOTCHAIN_TESTNET;
+      const targetConfig =
+        targetChainId === BOTCHAIN_MAINNET.chainId || (!targetChainId && networkMode === 'mainnet')
+          ? BOTCHAIN_MAINNET
+          : BOTCHAIN_TESTNET;
 
-    const targetChainIdHex = `0x${targetConfig.chainId.toString(16)}`;
+      const targetChainIdHex = `0x${targetConfig.chainId.toString(16)}`;
 
-    try {
-      await withTimeout(
+      const requestSwitch = () =>
         eth.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: targetChainIdHex }],
-        }),
-        CHAIN_SWITCH_TIMEOUT_MS,
-        'network switch'
-      );
-      setChainId(targetConfig.chainId);
-      if (accountRef.current && !isDemoAccount(accountRef.current)) {
-        updateChainAndBalance(accountRef.current);
-      }
-    } catch (switchError: any) {
-      if (switchError.code === 4001 || switchError.code === 'ACTION_REJECTED') {
-        console.warn('User rejected network switch in wallet.');
-        return;
+        });
+
+      const requestAdd = () =>
+        eth.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: targetChainIdHex,
+              chainName: targetConfig.chainName,
+              rpcUrls: [targetConfig.rpcUrl],
+              nativeCurrency: targetConfig.nativeCurrency,
+              blockExplorerUrls: targetConfig.blockExplorerUrls,
+            },
+          ],
+        });
+
+      const isRejection = (err: any) => err?.code === 4001 || err?.code === 'ACTION_REJECTED';
+
+      const isChainOnTarget = async () => {
+        try {
+          const raw = await eth.request({ method: 'eth_chainId' });
+          return normalizeChainId(raw) === targetConfig.chainId;
+        } catch {
+          return false;
+        }
+      };
+
+      const confirmChain = async () => {
+        // Rabby/MetaMask can lag ~400ms before eth_chainId reflects the new chain.
+        // Poll so a "silently successful" switch (chain never actually changed) is detected.
+        for (let attempt = 0; attempt < 10; attempt++) {
+          await new Promise((r) => setTimeout(r, 350));
+          if (await isChainOnTarget()) {
+            setChainId(targetConfig.chainId);
+            if (accountRef.current && !isDemoAccount(accountRef.current)) {
+              updateChainAndBalance(accountRef.current);
+            }
+            return true;
+          }
+        }
+        return false;
+      };
+
+      try {
+        await withTimeout(requestSwitch(), CHAIN_SWITCH_TIMEOUT_MS, 'network switch');
+        if (await confirmChain()) return;
+        console.warn('wallet_switchEthereumChain resolved but chain did not change — retrying via add.');
+      } catch (switchError: any) {
+        if (isRejection(switchError)) {
+          console.warn('User rejected network switch in wallet.');
+          return;
+        }
+        console.warn('wallet_switchEthereumChain failed, falling back to wallet_addEthereumChain:', switchError);
       }
 
-      // Automatically attempt wallet_addEthereumChain for unknown/unadded networks (4902, -32603, etc.)
+      // Fallback: add the network. On MetaMask this both adds and switches; on Rabby it may only add.
       try {
-        await withTimeout(
-          eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: targetChainIdHex,
-                chainName: targetConfig.chainName,
-                rpcUrls: [targetConfig.rpcUrl],
-                nativeCurrency: targetConfig.nativeCurrency,
-                blockExplorerUrls: targetConfig.blockExplorerUrls,
-              },
-            ],
-          }),
-          CHAIN_SWITCH_TIMEOUT_MS,
-          'network add'
-        );
-        setChainId(targetConfig.chainId);
-        if (accountRef.current && !isDemoAccount(accountRef.current)) {
-          updateChainAndBalance(accountRef.current);
-        }
+        await withTimeout(requestAdd(), CHAIN_SWITCH_TIMEOUT_MS, 'network add');
       } catch (addError: any) {
-        if (addError.code !== 4001 && addError.code !== 'ACTION_REJECTED' && addError.code !== 'WALLET_TIMEOUT') {
+        if (isRejection(addError)) {
+          console.warn('User rejected adding the network in wallet.');
+          return;
+        }
+        if (addError?.code !== 'WALLET_TIMEOUT') {
           console.error('Failed to add BOT Chain network:', addError);
           setConnectionError(`Failed to add ${targetConfig.chainName} to wallet: ${addError.message || ''}`);
         }
+        return;
       }
-    }
-  }, [networkMode, updateChainAndBalance]);
+
+      // Rabby does not auto-switch after addEthereumChain — issue an explicit switch to finish.
+      try {
+        await withTimeout(requestSwitch(), CHAIN_SWITCH_TIMEOUT_MS, 'network switch');
+      } catch (secondError: any) {
+        if (!isRejection(secondError)) {
+          console.warn('Explicit switch after add failed:', secondError);
+        }
+      }
+      await confirmChain();
+    },
+    [networkMode, updateChainAndBalance]
+  );
 
   const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
     setNetworkModeState(mode);
