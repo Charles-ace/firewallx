@@ -11,7 +11,7 @@ import { WalletModal } from './components/WalletModal';
 import { LandingPage } from './components/LandingPage';
 import { globalFirewallEngine } from './engine/firewallEngine';
 import { EvaluationResult } from './engine/types';
-import { BOTCHAIN_TESTNET } from './config/botchain';
+import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET } from './config/botchain';
 import { Zap, ExternalLink, Shield, ArrowRight } from 'lucide-react';
 import { useWallet } from './context/useWallet';
 
@@ -100,6 +100,7 @@ const FOOTER_LINKS: { title: string; items: { label: string; tab?: ActiveTab; hr
     title: 'Developers',
     items: [
       { label: 'BOT Chain Dev Docs', href: 'https://dev-docs.botchain.ai' },
+      { label: 'Mainnet Explorer', href: BOTCHAIN_MAINNET.blockExplorerUrls[0] },
       { label: 'Testnet Explorer', href: BOTCHAIN_TESTNET.blockExplorerUrls[0] },
     ],
   },
