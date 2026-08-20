@@ -11,6 +11,7 @@ import { WalletModal } from './components/WalletModal';
 import { LandingPage } from './components/LandingPage';
 import { globalFirewallEngine } from './engine/firewallEngine';
 import { EvaluationResult } from './engine/types';
+import { BOTCHAIN_TESTNET } from './config/botchain';
 import { Zap, ExternalLink, Shield, ArrowRight } from 'lucide-react';
 import { useWallet } from './context/useWallet';
 
