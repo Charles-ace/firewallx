@@ -525,4 +525,4 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   );
 };
 
-export { useWallet } from './useWallet';
+export const useWallet = () => useContext(WalletContext);
