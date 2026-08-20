@@ -7,6 +7,7 @@ import { PipelineDemo } from './PipelineDemo';
 import { Reveal } from './Reveal';
 import { ActiveTab } from './Navbar';
 import { BOTCHAIN_TESTNET, BOTCHAIN_MAINNET } from '../config/botchain';
+import { useWallet } from '../context/useWallet';
 
 interface LandingPageProps {
   onNavigate: (tab: ActiveTab) => void;
@@ -135,8 +136,8 @@ const FlowNode: React.FC<FlowNodeProps> = ({ x, y, r = 24, stroke, icon: Icon, i
 );
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKModal }) => {
-  const [networkTab, setNetworkTab] = React.useState<'mainnet' | 'testnet'>('mainnet');
-  const currentNetwork = networkTab === 'mainnet' ? BOTCHAIN_MAINNET : BOTCHAIN_TESTNET;
+  const { networkMode, setNetworkMode } = useWallet();
+  const currentNetwork = networkMode === 'mainnet' ? BOTCHAIN_MAINNET : BOTCHAIN_TESTNET;
 
   return (
     <div className="relative z-10">
@@ -443,26 +444,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
               <div className="mt-6 inline-flex items-center p-1 bg-slate-100/90 rounded-full border border-slate-200 shadow-inner">
                 <button
                   type="button"
-                  onClick={() => setNetworkTab('mainnet')}
+                  onClick={() => setNetworkMode('mainnet')}
                   className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 flex items-center space-x-2 ${
-                    networkTab === 'mainnet'
+                    networkMode === 'mainnet'
                       ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-sm'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${networkTab === 'mainnet' ? 'bg-white animate-pulse' : 'bg-amber-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${networkMode === 'mainnet' ? 'bg-white animate-pulse' : 'bg-amber-400'}`} />
                   <span>BOT Chain Mainnet (Live)</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setNetworkTab('testnet')}
+                  onClick={() => setNetworkMode('testnet')}
                   className={`px-4 py-1.5 text-xs font-semibold rounded-full transition-all duration-200 flex items-center space-x-2 ${
-                    networkTab === 'testnet'
+                    networkMode === 'testnet'
                       ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 font-bold'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span className={`w-2 h-2 rounded-full ${networkTab === 'testnet' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${networkMode === 'testnet' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                   <span>BOT Chain Testnet (On-Chain)</span>
                 </button>
               </div>
@@ -479,11 +480,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, onOpenSDKM
                     <span>{currentNetwork.chainName} Facts</span>
                   </div>
                   <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                    networkTab === 'mainnet' 
+                    networkMode === 'mainnet' 
                       ? 'bg-amber-50 text-amber-700 border-amber-200' 
                       : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   }`}>
-                    {networkTab === 'mainnet' ? 'LIVE MAINNET' : 'PUBLIC TESTNET'}
+                    {networkMode === 'mainnet' ? 'LIVE MAINNET' : 'PUBLIC TESTNET'}
                   </span>
                 </div>
 
