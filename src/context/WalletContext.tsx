@@ -112,7 +112,8 @@ const isRabbyProvider = (p: Eip1193Provider | undefined): boolean => {
 
 const getInjectedProvider = (): Eip1193Provider | undefined => {
   if (typeof window === 'undefined') return undefined;
-  const w = window as { ethereum?: Eip1193Provider };
+  const w = window as { ethereum?: Eip1193Provider; rabby?: Eip1193Provider };
+  if (w.rabby) return w.rabby;
   if (!w.ethereum) return undefined;
   if (Array.isArray(w.ethereum.providers)) {
     return w.ethereum.providers.find((p) => p.isRabby) || w.ethereum.providers.find((p) => p.isMetaMask) || w.ethereum.providers[0];
@@ -194,6 +195,67 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [fetchRpcBalance]);
 
+  const switchToBotChain = useCallback(async (targetChainId?: number) => {
+    const eth = getInjectedProvider();
+    if (!eth) return;
+
+    const targetConfig =
+      targetChainId === BOTCHAIN_MAINNET.chainId || (!targetChainId && networkMode === 'mainnet')
+        ? BOTCHAIN_MAINNET
+        : BOTCHAIN_TESTNET;
+
+    const targetChainIdHex = `0x${targetConfig.chainId.toString(16)}`;
+
+    try {
+      await withTimeout(
+        eth.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: targetChainIdHex }],
+        }),
+        CHAIN_SWITCH_TIMEOUT_MS,
+        'network switch'
+      );
+      setChainId(targetConfig.chainId);
+      if (accountRef.current && !isDemoAccount(accountRef.current)) {
+        updateChainAndBalance(accountRef.current);
+      }
+    } catch (switchError: any) {
+      if (switchError.code === 4001 || switchError.code === 'ACTION_REJECTED') {
+        console.warn('User rejected network switch in wallet.');
+        return;
+      }
+
+      // Automatically attempt wallet_addEthereumChain for unknown/unadded networks (4902, -32603, etc.)
+      try {
+        await withTimeout(
+          eth.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: targetChainIdHex,
+                chainName: targetConfig.chainName,
+                rpcUrls: [targetConfig.rpcUrl],
+                nativeCurrency: targetConfig.nativeCurrency,
+                blockExplorerUrls: targetConfig.blockExplorerUrls,
+              },
+            ],
+          }),
+          CHAIN_SWITCH_TIMEOUT_MS,
+          'network add'
+        );
+        setChainId(targetConfig.chainId);
+        if (accountRef.current && !isDemoAccount(accountRef.current)) {
+          updateChainAndBalance(accountRef.current);
+        }
+      } catch (addError: any) {
+        if (addError.code !== 4001 && addError.code !== 'ACTION_REJECTED' && addError.code !== 'WALLET_TIMEOUT') {
+          console.error('Failed to add BOT Chain network:', addError);
+          setConnectionError(`Failed to add ${targetConfig.chainName} to wallet: ${addError.message || ''}`);
+        }
+      }
+    }
+  }, [networkMode, updateChainAndBalance]);
+
   const setNetworkMode = useCallback((mode: ActiveNetworkMode) => {
     setNetworkModeState(mode);
     globalOnChainClient.setNetwork(mode);
@@ -205,9 +267,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setChainId(targetConfig.chainId);
       fetchRpcBalance(demoAddress, targetConfig.rpcUrl);
     } else if (accountRef.current) {
+      // Real injected wallet connected -> trigger automated chain switch in Rabby/MetaMask
       fetchRpcBalance(accountRef.current, targetConfig.rpcUrl);
+      switchToBotChain(targetConfig.chainId);
+    } else {
+      // Even if disconnected, if injected wallet is available, prompt chain switch
+      const eth = getInjectedProvider();
+      if (eth) {
+        switchToBotChain(targetConfig.chainId);
+      }
     }
-  }, [fetchRpcBalance]);
+  }, [fetchRpcBalance, switchToBotChain]);
 
   useEffect(() => {
     // Check if already connected on load
@@ -386,57 +456,6 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setChainId(null);
     setBalance('0');
     setConnectionError(null);
-  };
-
-  const switchToBotChain = async (targetChainId?: number) => {
-    const eth = getInjectedProvider();
-    if (!eth) return;
-
-    const targetConfig = targetChainId === BOTCHAIN_MAINNET.chainId || (!targetChainId && networkMode === 'mainnet')
-      ? BOTCHAIN_MAINNET
-      : BOTCHAIN_TESTNET;
-
-    const targetChainIdHex = `0x${targetConfig.chainId.toString(16)}`;
-
-    try {
-      await withTimeout(
-        eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: targetChainIdHex }],
-        }),
-        CHAIN_SWITCH_TIMEOUT_MS,
-        'network switch'
-      );
-      setChainId(targetConfig.chainId);
-    } catch (switchError: any) {
-      if (switchError.code === 4902 || switchError.data?.originalError?.code === 4902) {
-        try {
-          await withTimeout(
-            eth.request({
-              method: 'wallet_addEthereumChain',
-              params: [
-                {
-                  chainId: targetChainIdHex,
-                  chainName: targetConfig.chainName,
-                  rpcUrls: [targetConfig.rpcUrl],
-                  nativeCurrency: targetConfig.nativeCurrency,
-                  blockExplorerUrls: targetConfig.blockExplorerUrls,
-                },
-              ],
-            }),
-            CHAIN_SWITCH_TIMEOUT_MS,
-            'network add'
-          );
-          setChainId(targetConfig.chainId);
-        } catch (addError: any) {
-          console.error('Failed to add BOT Chain network:', addError);
-          setConnectionError(`Failed to add ${targetConfig.chainName} to wallet: ${addError.message || ''}`);
-        }
-      } else if (switchError.code !== 'WALLET_TIMEOUT') {
-        console.error('Failed to switch network:', switchError);
-        setConnectionError('Failed to switch network: ' + (switchError.message || ''));
-      }
-    }
   };
 
   const clearError = () => setConnectionError(null);

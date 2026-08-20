@@ -95,12 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center p-0.5 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
               <button
                 type="button"
-                onClick={() => {
-                  setNetworkMode('testnet');
-                  if (account && !account.startsWith('0x9965') && !account.startsWith('0x0760')) {
-                    switchToBotChain(968);
-                  }
-                }}
+                onClick={() => setNetworkMode('testnet')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 flex items-center space-x-1.5 ${
                   networkMode === 'testnet'
                     ? 'bg-white text-slate-900 font-bold shadow-sm border border-slate-200/80'
@@ -112,12 +107,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setNetworkMode('mainnet');
-                  if (account && !account.startsWith('0x9965') && !account.startsWith('0x0760')) {
-                    switchToBotChain(677);
-                  }
-                }}
+                onClick={() => setNetworkMode('mainnet')}
                 className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 flex items-center space-x-1.5 ${
                   networkMode === 'mainnet'
                     ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white font-bold shadow-sm'
